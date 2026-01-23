@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-config'
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase-admin'
+import { hasPermission } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
   try {
@@ -9,6 +10,11 @@ export async function GET(request: NextRequest) {
 
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { hasPermission: canRead } = await hasPermission(session.user.id, "reports:read")
+    if (!canRead) {
+      return NextResponse.json({ error: "You do not have permission to read reports." }, { status: 403 })
     }
 
     const { searchParams } = new URL(request.url)
@@ -59,7 +65,7 @@ async function getLeaveUsageReport(year: string, department?: string | null, emp
         first_name,
         last_name,
         email,
-        department,
+        department:department_id(id, name),
         position,
         role
       ),
@@ -74,7 +80,7 @@ async function getLeaveUsageReport(year: string, department?: string | null, emp
     .lte('end_date', `${year}-12-31`)
 
   if (department) {
-    query = query.eq('employee.department', department)
+    query = query.eq('employee.department.name', department)
   }
 
   if (employeeId) {
@@ -110,7 +116,7 @@ async function getLeaveUsageReport(year: string, department?: string | null, emp
     detailed: data.map((request: any) => ({
       id: request.id,
       employee: `${request.employee.first_name} ${request.employee.last_name}`,
-      department: request.employee.department,
+      department: request.employee.department?.name || null,
       leaveType: request.leaveType.name,
       startDate: request.start_date,
       endDate: request.end_date,
@@ -130,7 +136,7 @@ async function getEmployeeLeaveSummary(year: string, department?: string | null)
       first_name,
       last_name,
       email,
-      department,
+      department:department_id(id, name),
       position,
       role,
       leave_balances!inner(
@@ -148,7 +154,7 @@ async function getEmployeeLeaveSummary(year: string, department?: string | null)
     .eq('leave_balances.year', parseInt(year))
 
   if (department) {
-    query = query.eq('department', department)
+    query = query.eq('department.name', department)
   }
 
   const { data, error } = await query
@@ -172,7 +178,7 @@ async function getEmployeeLeaveSummary(year: string, department?: string | null)
       id: employee.id,
       name: `${employee.first_name} ${employee.last_name}`,
       email: employee.email,
-      department: employee.department,
+      department: employee.department?.name || null,
       position: employee.position,
       role: employee.role,
       leaveBalances: leaveBalances.map((balance: any) => ({
@@ -191,7 +197,7 @@ async function getDepartmentSummary(year: string) {
   const { data, error } = await supabaseAdmin
     .from('users')
     .select(`
-      department,
+      department:department_id(id, name),
       leave_requests!inner(
         total_days,
         status,
@@ -205,7 +211,7 @@ async function getDepartmentSummary(year: string) {
   if (error) throw error
 
   const departmentStats = data.reduce((acc: any, user: any) => {
-    const dept = user.department || 'Unassigned'
+    const dept = user.department?.name || 'Unassigned'
     if (!acc[dept]) {
       acc[dept] = {
         department: dept,
@@ -243,7 +249,7 @@ async function getPendingApprovalsReport() {
         first_name,
         last_name,
         email,
-        department
+        department:department_id(id, name)
       ),
       leaveType:leave_types(*)
     `)
@@ -255,7 +261,7 @@ async function getPendingApprovalsReport() {
   return data.map((request: any) => ({
     id: request.id,
     employee: `${request.employee.first_name} ${request.employee.last_name}`,
-    department: request.employee.department,
+    department: request.employee.department?.name || null,
     leaveType: request.leaveType.name,
     startDate: request.start_date,
     endDate: request.end_date,

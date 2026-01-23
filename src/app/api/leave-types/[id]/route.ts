@@ -1,22 +1,25 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getCurrentUser, hasPermission } from "@/lib/auth"
-import { supabaseAdmin } from "@/lib/supabase"
+import { supabaseAdmin } from "@/lib/supabase-admin"
 
 // GET /api/leave-types/[id] - Get single leave type
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const { user } = await getCurrentUser()
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
+    
+    console.log("asdas ",user);
 
     const { data: leaveType, error } = await supabaseAdmin
       .from("leave_types")
       .select("*")
-      .eq("id", params.id)
+      .eq("id", id)
       .single()
 
     if (error || !leaveType) {
@@ -36,9 +39,10 @@ export async function GET(
 // PUT /api/leave-types/[id] - Update leave type
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const { user } = await getCurrentUser()
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -46,7 +50,7 @@ export async function PUT(
 
     const { hasPermission: canUpdate } = await hasPermission(user.id, "ADMIN")
     if (!canUpdate) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+      return NextResponse.json({ error: "You do not have permission to update leave types." }, { status: 403 })
     }
 
     const body = await request.json()
@@ -64,7 +68,7 @@ export async function PUT(
     const { data: existingType, error: fetchError } = await supabaseAdmin
       .from("leave_types")
       .select("*")
-      .eq("id", params.id)
+      .eq("id", id)
       .single()
 
     if (fetchError || !existingType) {
@@ -98,7 +102,7 @@ export async function PUT(
         requires_approval: requires_approval !== undefined ? requires_approval : existingType.requires_approval,
         max_consecutive_days: max_consecutive_days !== undefined ? max_consecutive_days : existingType.max_consecutive_days,
       })
-      .eq("id", params.id)
+      .eq("id", id)
       .select()
       .single()
 
@@ -122,9 +126,10 @@ export async function PUT(
 // DELETE /api/leave-types/[id] - Delete leave type
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const { user } = await getCurrentUser()
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -139,7 +144,7 @@ export async function DELETE(
     const { data: leaveType, error: fetchError } = await supabaseAdmin
       .from("leave_types")
       .select("*")
-      .eq("id", params.id)
+      .eq("id", id)
       .single()
 
     if (fetchError || !leaveType) {
@@ -150,14 +155,14 @@ export async function DELETE(
     const { count } = await supabaseAdmin
       .from("leave_requests")
       .select("*", { count: "exact", head: true })
-      .eq("leave_type_id", params.id)
+      .eq("leave_type_id", id)
 
     if ((count || 0) > 0) {
       // Soft delete - just deactivate
       await supabaseAdmin
         .from("leave_types")
         .update({ is_active: false })
-        .eq("id", params.id)
+        .eq("id", id)
 
       return NextResponse.json({
         message: "Leave type deactivated (has existing requests)",
@@ -168,7 +173,7 @@ export async function DELETE(
     const { error: deleteError } = await supabaseAdmin
       .from("leave_types")
       .delete()
-      .eq("id", params.id)
+      .eq("id", id)
 
     if (deleteError) {
       throw deleteError

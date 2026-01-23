@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getCurrentUser, hasPermission, getUserProfile } from "@/lib/auth"
-import { supabaseAdmin } from "@/lib/supabase"
+import { supabaseAdmin } from "@/lib/supabase-admin"
 
 // GET /api/leave-history - Get leave history
 export async function GET(request: NextRequest) {
@@ -8,6 +8,11 @@ export async function GET(request: NextRequest) {
     const { user } = await getCurrentUser()
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const { hasPermission: canRead } = await hasPermission(user.id, "leave_history:read")
+    if (!canRead) {
+      return NextResponse.json({ error: "You do not have permission to read leave history." }, { status: 403 })
     }
 
     const { user: userProfile } = await getUserProfile(user.id)

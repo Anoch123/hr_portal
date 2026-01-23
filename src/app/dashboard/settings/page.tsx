@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useSession } from "next-auth/react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -9,6 +10,7 @@ import { Switch } from "@/components/ui/switch"
 import { useTheme } from "@/components/providers/theme-provider"
 
 export default function SettingsPage() {
+  const { data: session } = useSession()
   const { theme, setTheme } = useTheme()
   const [passwordData, setPasswordData] = useState({
     newPassword: "",

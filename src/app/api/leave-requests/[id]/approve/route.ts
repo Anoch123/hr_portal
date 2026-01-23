@@ -1,28 +1,41 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getCurrentUser, hasPermission, getUserProfile } from "@/lib/auth"
-import { supabaseAdmin } from "@/lib/supabase"
+import { supabaseAdmin } from "@/lib/supabase-admin"
 import { sendEmail, emailTemplates } from "@/lib/email"
 import { formatDate } from "@/lib/utils"
 
 // POST /api/leave-requests/[id]/approve - Approve leave request
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
+    
     const { user } = await getCurrentUser()
     if (!user) {
+      console.error("No user found in session")
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { user: userProfile } = await getUserProfile(user.id)
-    if (!userProfile) {
+    console.log("userProfile " , user);
+    const { data: userProfile, error: profileError } = await supabaseAdmin
+      .from('users')
+      .select('*')
+      .eq('id', user.id)
+      .single()
+    
+    console.log("userProfile data:", userProfile)
+    console.log("profileError:", profileError)
+    
+    if (profileError || !userProfile) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
+
     const { hasPermission: canApprove } = await hasPermission(user.id, "HR_MANAGER")
     if (!canApprove && userProfile.role !== "MANAGER") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+      return NextResponse.json({ error: "You do not have permission to approve leave requests." }, { status: 403 })
     }
 
     const { data: leaveRequest, error: fetchError } = await supabaseAdmin
@@ -30,13 +43,15 @@ export async function POST(
       .select(
         `
         *,
-        user:users(id, first_name, last_name, email, manager_id),
+        user:users!leave_requests_user_id_fkey(id, first_name, last_name, email, manager_id),
         leaveType:leave_types(*)
         `
       )
-      .eq("id", params.id)
+      .eq("id", id)
       .single()
 
+      console.log("leaveRequest " , leaveRequest);
+      console.log("fetchError " , fetchError);
     if (fetchError || !leaveRequest) {
       return NextResponse.json({ error: "Leave request not found" }, { status: 404 })
     }
@@ -48,6 +63,7 @@ export async function POST(
       )
     }
 
+    console.log("userProfile.role ", userProfile.role);
     // Check if user can approve this request
     // Managers can only approve their direct reports
     // HR_MANAGER and ADMIN can approve anyone
@@ -68,7 +84,7 @@ export async function POST(
         approved_by_id: user.id,
         approved_at: new Date().toISOString(),
       })
-      .eq("id", params.id)
+      .eq("id", id)
       .select()
       .single()
 
@@ -128,6 +144,7 @@ export async function POST(
     })
   } catch (error) {
     console.error("Error approving leave request:", error)
+    console.log(error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

@@ -1,4 +1,5 @@
-import { supabase, supabaseAdmin } from './supabase'
+import { supabase } from './supabase'
+import { supabaseAdmin } from './supabase-admin'
 import type { Database } from './supabase'
 
 type LeaveRequest = Database['public']['Tables']['leave_requests']['Row']

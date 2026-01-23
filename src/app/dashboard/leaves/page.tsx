@@ -302,14 +302,14 @@ export default function LeavesPage() {
                     </TableCell>
                     <TableCell>
                       {request.leave_mode === 'FULL' ? 'Full Day' :
-                       request.leave_mode === 'HALF' ? 'Half Day' :
-                       request.leave_mode === 'SHORT' ? 'Short Leave' : request.leave_mode}
+                        request.leave_mode === 'HALF' ? 'Half Day' :
+                          request.leave_mode === 'SHORT' ? 'Short Leave' : request.leave_mode}
                     </TableCell>
                     <TableCell>{formatDate(request.start_date)}</TableCell>
                     <TableCell>{formatDate(request.end_date)}</TableCell>
                     <TableCell>{request.total_days}</TableCell>
                     <TableCell>
-                      <Badge className={getStatusColor(request.status)}>
+                      <Badge className={request.status}>
                         {request.status}
                       </Badge>
                     </TableCell>
@@ -375,6 +375,11 @@ export default function LeavesPage() {
               {submitting ? "Cancelling..." : "Cancel Request"}
             </Button>
           </DialogFooter>
+          {error && (
+            <div className="bg-red-50 text-red-500 p-3 rounded-md text-sm">
+              {error}
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

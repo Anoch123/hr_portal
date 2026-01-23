@@ -1,28 +1,34 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getCurrentUser, hasPermission, getUserProfile } from "@/lib/auth"
-import { supabaseAdmin } from "@/lib/supabase"
+import { supabaseAdmin } from "@/lib/supabase-admin"
 import { sendEmail, emailTemplates } from "@/lib/email"
 import { formatDate } from "@/lib/utils"
 
 // POST /api/leave-requests/[id]/reject - Reject leave request
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const { user } = await getCurrentUser()
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { user: userProfile } = await getUserProfile(user.id)
-    if (!userProfile) {
+    const { data: userProfile, error: profileError } = await supabaseAdmin
+      .from('users')
+      .select('*')
+      .eq('id', user.id)
+      .single()
+    
+    if (profileError || !userProfile) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
     const { hasPermission: canReject } = await hasPermission(user.id, "HR_MANAGER")
     if (!canReject && userProfile.role !== "MANAGER") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+      return NextResponse.json({ error: "You do not have permission to reject leave requests." }, { status: 403 })
     }
 
     const body = await request.json()
@@ -40,11 +46,11 @@ export async function POST(
       .select(
         `
         *,
-        user:users(id, first_name, last_name, email, manager_id),
+        user:users!leave_requests_user_id_fkey(id, first_name, last_name, email, manager_id),
         leaveType:leave_types(*)
         `
       )
-      .eq("id", params.id)
+      .eq("id", id)
       .single()
 
     if (fetchError || !leaveRequest) {
@@ -77,7 +83,7 @@ export async function POST(
         approved_by_id: user.id,
         approved_at: new Date().toISOString(),
       })
-      .eq("id", params.id)
+      .eq("id", id)
       .select()
       .single()
 

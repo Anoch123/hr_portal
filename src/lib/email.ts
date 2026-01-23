@@ -1,5 +1,5 @@
 import nodemailer from "nodemailer"
-import { supabaseAdmin } from "./supabase"
+import { supabaseAdmin } from "./supabase-admin"
 
 const transporter = nodemailer.createTransport({
   host: "mail.lencar.lk",

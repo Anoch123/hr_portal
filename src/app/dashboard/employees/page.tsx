@@ -56,8 +56,14 @@ interface Employee {
   first_name: string
   last_name: string
   role: string
-  department: string | null
+  department: {
+    id: string
+    name: string
+  } | null
   position: string | null
+  nic_no: string | null
+  joining_date: string | null
+  employee_no: string | null
   is_active: boolean
   createdAt: string
   manager: {
@@ -78,10 +84,17 @@ interface LeaveType {
   max_consecutive_days: number | null
 }
 
+interface Department {
+  id: string
+  name: string
+  description: string | null
+}
+
 export default function EmployeesPage() {
   const { data: session } = useSession()
   const [employees, setEmployees] = useState<Employee[]>([])
   const [managers, setManagers] = useState<Employee[]>([])
+  const [departments, setDepartments] = useState<Department[]>([])
   const [employeeBalancesMap, setEmployeeBalancesMap] = useState<Record<string, LeaveBalance[]>>({})
   const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([])
   const [loading, setLoading] = useState(true)
@@ -100,8 +113,11 @@ export default function EmployeesPage() {
     first_name: "",
     last_name: "",
     role: "EMPLOYEE",
-    department: "",
+    departmentId: "",
     position: "",
+    nic_no: "",
+    joining_date: "",
+    employee_no: "",
     managerId: "none",
   })
   const [balanceFormData, setBalanceFormData] = useState({
@@ -116,6 +132,7 @@ export default function EmployeesPage() {
   useEffect(() => {
     fetchEmployees()
     fetchLeaveTypes()
+    fetchDepartments()
   }, [search])
 
   const fetchEmployees = async () => {
@@ -177,6 +194,16 @@ export default function EmployeesPage() {
     }
   }
 
+  const fetchDepartments = async () => {
+    try {
+      const res = await fetch("/api/departments?limit=100")
+      const data = await res.json()
+      setDepartments(data.departments || [])
+    } catch (err) {
+      console.error("Error fetching departments:", err)
+    }
+  }
+
   const handleCreate = async () => {
     setError("")
     if (!formData.email || !formData.first_name || !formData.last_name) {
@@ -221,6 +248,7 @@ export default function EmployeesPage() {
     try {
       const payload = {
         ...formData,
+        department_id: formData.departmentId || null,
         managerId: formData.managerId === "none" ? null : formData.managerId,
       }
 
@@ -374,8 +402,11 @@ export default function EmployeesPage() {
       first_name: "",
       last_name: "",
       role: "EMPLOYEE",
-      department: "",
+      departmentId: "",
       position: "",
+      nic_no: "",
+      joining_date: "",
+      employee_no: "",
       managerId: "none",
     })
     setError("")
@@ -399,8 +430,11 @@ export default function EmployeesPage() {
       first_name: employee.first_name,
       last_name: employee.last_name,
       role: employee.role,
-      department: employee.department || "",
+      departmentId: employee.department?.id || "",
       position: employee.position || "",
+      nic_no: employee.nic_no || "",
+      joining_date: employee.joining_date || "",
+      employee_no: employee.employee_no || "",
       managerId: employee.manager?.id || "none",
     })
     setEditDialogOpen(true)
@@ -490,13 +524,24 @@ export default function EmployeesPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Department</Label>
-                  <Input
-                    value={formData.department}
-                    onChange={(e) =>
-                      setFormData({ ...formData, department: e.target.value })
+                  <Select
+                    value={formData.departmentId}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, departmentId: value === "none" ? "" : value })
                     }
-                    placeholder="Engineering"
-                  />
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select department" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
+                      {departments.map((dept) => (
+                        <SelectItem key={dept.id} value={dept.id}>
+                          {dept.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label>Position</Label>
@@ -506,6 +551,38 @@ export default function EmployeesPage() {
                       setFormData({ ...formData, position: e.target.value })
                     }
                     placeholder="Software Engineer"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>NIC No</Label>
+                  <Input
+                    value={formData.nic_no}
+                    onChange={(e) =>
+                      setFormData({ ...formData, nic_no: e.target.value })
+                    }
+                    placeholder="123456789V"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Joining Date</Label>
+                  <Input
+                    type="date"
+                    value={formData.joining_date}
+                    onChange={(e) =>
+                      setFormData({ ...formData, joining_date: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Employee No</Label>
+                  <Input
+                    value={formData.employee_no}
+                    onChange={(e) =>
+                      setFormData({ ...formData, employee_no: e.target.value })
+                    }
+                    placeholder="EMP001"
                   />
                 </div>
               </div>
@@ -576,6 +653,9 @@ export default function EmployeesPage() {
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
+                  <TableHead>Employee No</TableHead>
+                  <TableHead>NIC No</TableHead>
+                  <TableHead>Joining Date</TableHead>
                   <TableHead>Role</TableHead>
                   <TableHead>Department</TableHead>
                   <TableHead>Manager</TableHead>
@@ -591,12 +671,15 @@ export default function EmployeesPage() {
                       {employee.first_name} {employee.last_name}
                     </TableCell>
                     <TableCell>{employee.email}</TableCell>
+                    <TableCell>{employee.employee_no || "-"}</TableCell>
+                    <TableCell>{employee.nic_no || "-"}</TableCell>
+                    <TableCell>{employee.joining_date ? formatDate(employee.joining_date) : "-"}</TableCell>
                     <TableCell>
                       <Badge className={employee.role}>
                         {formatRole(employee.role)}
                       </Badge>
                     </TableCell>
-                    <TableCell>{employee.department || "-"}</TableCell>
+                    <TableCell>{employee.department?.name || "-"}</TableCell>
                     <TableCell>
                       {employee.manager
                         ? `${employee.manager.first_name} ${employee.manager.last_name}`
@@ -721,13 +804,25 @@ export default function EmployeesPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Department</Label>
-                <Input
-                  value={formData.department}
+                <Select
+                  value={formData.departmentId || "none"}
                   disabled={formData.role === "ADMIN"}
-                  onChange={(e) =>
-                    setFormData({ ...formData, department: e.target.value })
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, departmentId: value === "none" ? "" : value })
                   }
-                />
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select department" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    {departments.map((dept) => (
+                      <SelectItem key={dept.id} value={dept.id}>
+                        {dept.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label>Position</Label>
@@ -737,6 +832,41 @@ export default function EmployeesPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, position: e.target.value })
                   }
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label>NIC No</Label>
+                <Input
+                  value={formData.nic_no}
+                  disabled={formData.role === "ADMIN"}
+                  onChange={(e) =>
+                    setFormData({ ...formData, nic_no: e.target.value })
+                  }
+                  placeholder="123456789V"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Joining Date</Label>
+                <Input
+                  type="date"
+                  value={formData.joining_date}
+                  disabled={formData.role === "ADMIN"}
+                  onChange={(e) =>
+                    setFormData({ ...formData, joining_date: e.target.value })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Employee No</Label>
+                <Input
+                  value={formData.employee_no}
+                  disabled={formData.role === "ADMIN"}
+                  onChange={(e) =>
+                    setFormData({ ...formData, employee_no: e.target.value })
+                  }
+                  placeholder="EMP001"
                 />
               </div>
             </div>

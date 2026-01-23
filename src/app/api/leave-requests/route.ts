@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth-config"
-import { supabase, supabaseAdmin } from "@/lib/supabase"
+import { supabase } from "@/lib/supabase"
+import { supabaseAdmin } from "@/lib/supabase-admin"
 import { getLeaveRequests, createLeaveRequest as createRequest } from "@/lib/leave"
 import { sendEmail, emailTemplates } from "@/lib/email"
 import { calculateBusinessDays, formatDate } from "@/lib/utils"
+import { hasPermission } from "@/lib/auth"
 
 // GET /api/leave-requests - List leave requests
 export async function GET(request: NextRequest) {
@@ -15,6 +17,11 @@ export async function GET(request: NextRequest) {
     }
 
     const userId = session.user.id
+
+    const { hasPermission: canRead } = await hasPermission(userId, "leave_requests:read")
+    if (!canRead) {
+      return NextResponse.json({ error: "You do not have permission to read leave requests." }, { status: 403 })
+    }
 
     const { searchParams } = new URL(request.url)
     const status = searchParams.get("status") as any
@@ -81,6 +88,11 @@ export async function POST(request: NextRequest) {
     }
 
     const userId = session.user.id
+
+    const { hasPermission: canCreate } = await hasPermission(userId, "leave_requests:create")
+    if (!canCreate) {
+      return NextResponse.json({ error: "You do not have permission to create leave requests." }, { status: 403 })
+    }
     const body = await request.json()
     const { leaveTypeId, startDate, endDate, reason, leaveMode = 'FULL' } = body
 
@@ -111,7 +123,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (start < new Date()) {
+    // Allow current date and future dates
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    if (start < today) {
       return NextResponse.json(
         { error: "Cannot request leave for past dates" },
         { status: 400 }

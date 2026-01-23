@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getCurrentUser, hasPermission, getUserProfile } from "@/lib/auth"
-import { supabaseAdmin } from "@/lib/supabase"
+import { supabaseAdmin } from "@/lib/supabase-admin"
 import { sendEmail, emailTemplates } from "@/lib/email"
 import { generatePassword } from "@/lib/utils"
 
@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     const { user: userProfile } = await getUserProfile(user.id)
     const { hasPermission: canRead } = await hasPermission(user.id, "ADMIN")
     if (!canRead) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+      return NextResponse.json({ error: "You do not have permission to read employees." }, { status: 403 })
     }
 
     const { searchParams } = new URL(request.url)
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
 
     let query = supabaseAdmin
       .from("users")
-      .select("*, manager:manager_id(id, first_name, last_name)", { count: "exact" })
+      .select("*, manager:manager_id(id, first_name, last_name), department:department_id(id, name)", { count: "exact" })
 
     if (search) {
       query = query.or(
@@ -36,7 +36,8 @@ export async function GET(request: NextRequest) {
     }
 
     if (department) {
-      query = query.eq("department", department)
+      // Filter by department name (join with departments table)
+      query = query.eq("department.name", department)
     }
 
     if (role) {
@@ -76,7 +77,7 @@ export async function POST(request: NextRequest) {
 
     const { hasPermission: canCreate } = await hasPermission(user.id, "ADMIN")
     if (!canCreate) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+      return NextResponse.json({ error: "You do not have permission to create employees." }, { status: 403 })
     }
 
     const body = await request.json()
@@ -87,8 +88,11 @@ export async function POST(request: NextRequest) {
     const first_name = body.first_name || body.firstName
     const last_name = body.last_name || body.lastName
     const role = body.role
-    const department = body.department
+    const department_id = body.department_id || body.departmentId
     const position = body.position
+    const nic_no = body.nic_no
+    const joining_date = body.joining_date
+    const employee_no = body.employee_no
     const managerId = body.managerId
 
     // Validate required fields
@@ -141,8 +145,11 @@ export async function POST(request: NextRequest) {
         first_name: first_name,
         last_name: last_name,
         role: role || "EMPLOYEE",
-        department,
+        department_id,
         position,
+        nic_no,
+        joining_date,
+        employee_no,
         manager_id: managerId,
       })
       .select()

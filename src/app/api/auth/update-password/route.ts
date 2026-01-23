@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-config'
 import { updatePassword } from '@/lib/auth'
+import { hasPermission } from "@/lib/auth"
 
 export async function POST(request: NextRequest) {
   try {
@@ -9,6 +10,13 @@ export async function POST(request: NextRequest) {
 
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // alert(session.user.id)
+
+    const { hasPermission: canUpdate } = await hasPermission(session.user.id, "settings:update")
+    if (!canUpdate) {
+      return NextResponse.json({ error: "Your don't have permission to update settings" }, { status: 403 })
     }
 
     const { newPassword } = await request.json()

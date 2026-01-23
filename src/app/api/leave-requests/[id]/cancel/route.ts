@@ -1,19 +1,26 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth-config"
-import { supabaseAdmin } from "@/lib/supabase"
+import { supabaseAdmin } from "@/lib/supabase-admin"
 import { sendEmail, emailTemplates } from "@/lib/email"
 import { formatDate } from "@/lib/utils"
+import { hasPermission } from "@/lib/auth"
 
 // POST /api/leave-requests/[id]/cancel - Cancel leave request
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const { hasPermission: canRead } = await hasPermission(session.user.id, "leave_requests:cancel")
+    if (!canRead) {
+      return NextResponse.json({ error: "You do not have permission to cancel leave requests." }, { status: 403 })
     }
 
     const userId = session.user.id
@@ -23,7 +30,7 @@ export async function POST(
     const { data: leaveRequest, error: fetchError } = await supabaseAdmin
       .from("leave_requests")
       .select("*, leaveType:leave_types(*), user:users!leave_requests_user_id_fkey(*)")
-      .eq("id", params.id)
+      .eq("id", id)
       .single()
 
     if (fetchError || !leaveRequest) {
@@ -57,7 +64,7 @@ export async function POST(
         cancelled_at: new Date().toISOString(),
         cancellation_reason: reason,
       })
-      .eq("id", params.id)
+      .eq("id", id)
       .select()
       .single()
 
@@ -67,7 +74,7 @@ export async function POST(
 
     // Update leave balance
     const currentYear = new Date().getFullYear()
-    
+
     const { data: balance } = await supabaseAdmin
       .from("leave_balances")
       .select("*")
@@ -78,7 +85,7 @@ export async function POST(
 
     if (balance) {
       const updateData: any = {}
-      
+
       if (previousStatus === "PENDING") {
         // Restore pending days
         updateData.pending_days = (balance.pending_days || 0) - leaveRequest.total_days

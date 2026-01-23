@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getCurrentUser, hasPermission } from "@/lib/auth"
-import { supabaseAdmin } from "@/lib/supabase"
+import { supabaseAdmin } from "@/lib/supabase-admin"
 
 // GET /api/employees/[id] - Get single employee
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const { user } = await getCurrentUser()
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -15,13 +16,13 @@ export async function GET(
 
     const { hasPermission: canRead } = await hasPermission(user.id, "ADMIN")
     if (!canRead) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+      return NextResponse.json({ error: "You do not have permission to read employees." }, { status: 403 })
     }
 
     const { data: employee, error } = await supabaseAdmin
       .from("users")
       .select("*")
-      .eq("id", params.id)
+      .eq("id", id)
       .single()
 
     if (error || !employee) {
@@ -38,9 +39,10 @@ export async function GET(
 // PUT /api/employees/[id] - Update employee
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const { user } = await getCurrentUser()
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -48,7 +50,7 @@ export async function PUT(
 
     const { hasPermission: canUpdate } = await hasPermission(user.id, "HR_MANAGER")
     if (!canUpdate) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+      return NextResponse.json({ error: "You do not have permission to update employees." }, { status: 403 })
     }
 
     const body = await request.json()
@@ -59,8 +61,11 @@ export async function PUT(
     if (body.first_name !== undefined) updateData.first_name = body.first_name
     if (body.last_name !== undefined) updateData.last_name = body.last_name
     if (body.role !== undefined) updateData.role = body.role
-    if (body.department !== undefined) updateData.department = body.department
+    if (body.department_id !== undefined || body.departmentId !== undefined) updateData.department_id = body.department_id || body.departmentId
     if (body.position !== undefined) updateData.position = body.position
+    if (body.nic_no !== undefined) updateData.nic_no = body.nic_no
+    if (body.joining_date !== undefined) updateData.joining_date = body.joining_date
+    if (body.employee_no !== undefined) updateData.employee_no = body.employee_no
     if (body.managerId !== undefined) updateData.manager_id = body.managerId
     if (body.is_active !== undefined) updateData.is_active = body.is_active
     updateData.updated_at = new Date().toISOString()
@@ -68,7 +73,7 @@ export async function PUT(
     const { data: employee, error } = await supabaseAdmin
       .from("users")
       .update(updateData)
-      .eq("id", params.id)
+      .eq("id", id)
       .select()
       .single()
 
@@ -94,9 +99,10 @@ export async function PUT(
 // DELETE /api/employees/[id] - Delete employee
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const { user } = await getCurrentUser()
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -110,7 +116,7 @@ export async function DELETE(
     const { error } = await supabaseAdmin
       .from("users")
       .update({ is_active: false })
-      .eq("id", params.id)
+      .eq("id", id)
 
     if (error) {
       return NextResponse.json({ error: "Failed to deactivate employee" }, { status: 400 })

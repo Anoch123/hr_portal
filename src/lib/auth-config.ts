@@ -43,7 +43,7 @@ export const authOptions: NextAuthOptions = {
               role: profileData?.role || "EMPLOYEE",
               firstName: profileData?.first_name || "",
               lastName: profileData?.last_name || "",
-              department: profileData?.department || "",
+              department: profileData?.department?.name || "",
               position: profileData?.position || "",
               managerId: profileData?.manager_id || null,
             }

@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from "next/server"
-import { supabase, supabaseAdmin } from "@/lib/supabase"
+import { supabase } from "@/lib/supabase"
+import { supabaseAdmin } from "@/lib/supabase-admin"
 import { getLeaveTypes } from "@/lib/leave"
+import { getCurrentUser, hasPermission } from "@/lib/auth"
 
 // GET /api/leave-types - List all leave types
 export async function GET(request: NextRequest) {
   try {
+    const { user } = await getCurrentUser()
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
 
+    // RLS policies now handle permission checks at database level
     const { leaveTypes, error } = await getLeaveTypes()
 
     if (error) throw error
@@ -23,20 +30,14 @@ export async function GET(request: NextRequest) {
 // POST /api/leave-types - Create new leave type (Admin only)
 export async function POST(request: NextRequest) {
   try {
-    const { data: { user } } = await supabase.auth.getUser()
+    const { user } = await getCurrentUser()
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // Check if user is admin
-    const { data: userProfile } = await supabaseAdmin
-      .from('users')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (!userProfile || userProfile.role !== 'ADMIN') {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    const { hasPermission: canCreate } = await hasPermission(user.id, "leave_types:create")
+    if (!canCreate) {
+      return NextResponse.json({ error: "You do not have permission to create leave types." }, { status: 403 })
     }
 
     const body = await request.json()

@@ -1,16 +1,22 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getCurrentUser, hasPermission, getUserProfile } from "@/lib/auth"
-import { supabaseAdmin } from "@/lib/supabase"
+import { supabaseAdmin } from "@/lib/supabase-admin"
 
 // GET /api/leave-requests/[id] - Get single leave request
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const { user } = await getCurrentUser()
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const { hasPermission: canRead } = await hasPermission(user.id, "leave_requests:read")
+    if (!canRead) {
+      return NextResponse.json({ error: "You do not have permission to read leave requests." }, { status: 403 })
     }
 
     const { user: userProfile } = await getUserProfile(user.id)
@@ -23,12 +29,12 @@ export async function GET(
       .select(
         `
         *,
-        user:users(id, first_name, last_name, email, department),
+        user:users!leave_requests_user_id_fkey(id, first_name, last_name, email, department),
         leaveType:leave_types(*),
-        approvedBy:users!approved_by_id(id, first_name, last_name)
+        approvedBy:users!leave_requests_approved_by_id_fkey(id, first_name, last_name)
         `
       )
-      .eq("id", params.id)
+      .eq("id", id)
       .single()
 
     if (error || !leaveRequest) {
@@ -48,9 +54,10 @@ export async function GET(
 // DELETE /api/leave-requests/[id] - Delete leave request (only if pending)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const { user } = await getCurrentUser()
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -64,19 +71,19 @@ export async function DELETE(
     const { data: leaveRequest, error: fetchError } = await supabaseAdmin
       .from("leave_requests")
       .select("*")
-      .eq("id", params.id)
+      .eq("id", id)
       .single()
 
     if (fetchError || !leaveRequest) {
       return NextResponse.json({ error: "Leave request not found" }, { status: 404 })
     }
 
-    // Only allow deletion of own pending requests or admin
-    if (
-      leaveRequest.user_id !== user.id &&
-      userProfile.role !== "ADMIN"
-    ) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    // Only allow deletion of own pending requests or users with delete permission
+    if (leaveRequest.user_id !== user.id) {
+      const { hasPermission: canDelete } = await hasPermission(user.id, "leave_requests:delete")
+      if (!canDelete) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+      }
     }
 
     if (leaveRequest.status !== "PENDING") {
@@ -110,7 +117,7 @@ export async function DELETE(
     const { error: deleteError } = await supabaseAdmin
       .from("leave_requests")
       .delete()
-      .eq("id", params.id)
+      .eq("id", id)
 
     if (deleteError) {
       throw deleteError

@@ -156,6 +156,10 @@ export default function LeaveTypesPage() {
   const fetchLeaveTypes = async () => {
     try {
       const res = await fetch("/api/leave-types")
+      if (!res.ok) {
+        console.error("Failed to fetch leave types")
+        return
+      }
       const data = await res.json()
       setLeaveTypes(data || [])
     } catch (err) {

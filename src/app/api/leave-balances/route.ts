@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getCurrentUser, hasPermission, getUserProfile, ensureUserProfile } from "@/lib/auth"
-import { supabaseAdmin } from "@/lib/supabase"
+import { supabaseAdmin } from "@/lib/supabase-admin"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth-config"
 
@@ -21,9 +21,9 @@ export async function GET(request: NextRequest) {
     let targetUserId = userId
     if (employeeId) {
       // Check if user has permission to view other employees' balances
-      const { hasPermission: canViewOthers } = await hasPermission(userId, "HR_MANAGER")
+      const { hasPermission: canViewOthers } = await hasPermission(userId, "leave_balances:read")
       if (!canViewOthers) {
-        return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+        return NextResponse.json({ error: "You do not have permission to view leave balances." }, { status: 403 })
       }
       targetUserId = employeeId
     }
@@ -67,9 +67,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { hasPermission: canUpdate } = await hasPermission(user.id, "HR_MANAGER")
+    const { hasPermission: canUpdate } = await hasPermission(user.id, "leave_balances:update")
     if (!canUpdate) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+      return NextResponse.json({ error: "You do not have permission to update leave balances." }, { status: 403 })
     }
 
     const body = await request.json()

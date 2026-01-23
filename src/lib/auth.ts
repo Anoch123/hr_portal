@@ -1,4 +1,5 @@
-import { supabase, supabaseAdmin } from './supabase'
+import { supabase } from './supabase'
+import { supabaseAdmin } from './supabase-admin'
 import { getSession } from './get-session'
 import type { Database } from './supabase'
 
@@ -97,13 +98,13 @@ export async function getUserProfile(userId: string) {
   try {
     const { data, error } = await supabase
       .from('users')
-      .select('*')
+      .select('*, department:department_id(id, name)')
       .eq('id', userId)
       .single()
 
     if (error) throw error
 
-    return { user: data as User, error: null }
+    return { user: data as User & { department: { id: string; name: string } | null }, error: null }
   } catch (error) {
     return { user: null, error }
   }
@@ -125,7 +126,7 @@ export async function ensureUserProfile(userId: string, email: string, firstName
         email,
         first_name: firstName || email.split('@')[0],
         last_name: lastName || '',
-        role: 'EMPLOYEE',
+        role: 'ADMIN',
       })
       .select()
       .single()
@@ -190,29 +191,37 @@ export async function updatePassword(userId: string, newPassword: string) {
   }
 }
 
-export async function hasPermission(userId: string, requiredRole: string) {
+export async function hasPermission(userId: string, required: string): Promise<{hasPermission: boolean, error: any}> {
   try {
-    const { data, error } = await supabaseAdmin
+    const { data: user, error } = await supabaseAdmin
       .from('users')
-      .select('*')
+      .select('role')
       .eq('id', userId)
       .single()
 
-    if (error) throw error
-
-    if (!data) throw new Error('User not found')
-
-    const roleHierarchy: Record<string, number> = {
-      ADMIN: 4,
-      HR_MANAGER: 3,
-      MANAGER: 2,
-      EMPLOYEE: 1,
+    if (error || !user) {
+      return { hasPermission: false, error: error || new Error('User not found') }
     }
 
-    const userRoleLevel = roleHierarchy[data.role] || 0
-    const requiredRoleLevel = roleHierarchy[requiredRole] || 0
+    if (required.includes(':')) {
+      // It's a permission, check against database
+      const { hasPermission: checkRolePermission } = await import('@/lib/acl')
+      const result = await checkRolePermission(user.role, required as any)
+      return { hasPermission: result, error: null }
+    } else {
+      // It's a role, check hierarchy
+      const roleHierarchy: Record<string, number> = {
+        ADMIN: 4,
+        HR_MANAGER: 3,
+        MANAGER: 2,
+        EMPLOYEE: 1,
+      }
 
-    return { hasPermission: userRoleLevel >= requiredRoleLevel, error: null }
+      const userRoleLevel = roleHierarchy[user.role] || 0
+      const requiredRoleLevel = roleHierarchy[required] || 0
+
+      return { hasPermission: userRoleLevel >= requiredRoleLevel, error: null }
+    }
   } catch (error) {
     console.error('Permission check failed:', error)
     return { hasPermission: false, error }

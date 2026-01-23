@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth-config"
-import { getUserProfile } from "@/lib/auth"
-import { supabaseAdmin } from "@/lib/supabase"
+import { getUserProfile, hasPermission } from "@/lib/auth"
+import { supabaseAdmin } from "@/lib/supabase-admin"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { formatDate, getStatusColor } from "@/lib/utils"
@@ -11,34 +11,47 @@ import { redirect } from "next/navigation"
 async function getDashboardData(userId: string, role: string) {
   const currentYear = new Date().getFullYear()
 
+  // Check permissions
+  const { hasPermission: canReadBalances } = await hasPermission(userId, "leave_balances:read")
+  const { hasPermission: canReadRequests } = await hasPermission(userId, "leave_requests:read")
+  const { hasPermission: canApprove } = await hasPermission(userId, "leave_requests:approve")
+
   // Get leave balances
-  const { data: leaveBalances } = await supabaseAdmin
-    .from("leave_balances")
-    .select(
-      `
-      *,
-      leaveType:leave_types(*)
-      `
-    )
-    .eq("user_id", userId)
-    .eq("year", currentYear)
+  let leaveBalances = null
+  if (canReadBalances) {
+    const { data } = await supabaseAdmin
+      .from("leave_balances")
+      .select(
+        `
+        *,
+        leaveType:leave_types(*)
+        `
+      )
+      .eq("user_id", userId)
+      .eq("year", currentYear)
+    leaveBalances = data
+  }
 
   // Get recent leave requests
-  const { data: recentRequests } = await supabaseAdmin
-    .from("leave_requests")
-    .select(
-      `
-      *,
-      leaveType:leave_types(*)
-      `
-    )
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false })
-    .limit(5)
+  let recentRequests = null
+  if (canReadRequests) {
+    const { data } = await supabaseAdmin
+      .from("leave_requests")
+      .select(
+        `
+        *,
+        leaveType:leave_types(*)
+        `
+      )
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(5)
+    recentRequests = data
+  }
 
   // Get pending approvals count (for managers)
   let pendingApprovalsCount = 0
-  if (role === "ADMIN" || role === "HR_MANAGER" || role === "MANAGER") {
+  if (canApprove) {
     const { data: employees } = await supabaseAdmin
       .from("users")
       .select("id")
@@ -65,28 +78,35 @@ async function getDashboardData(userId: string, role: string) {
   }
 
   // Get stats
-  const { count: totalLeaves } = await supabaseAdmin
-    .from("leave_requests")
-    .select("*", { count: "exact", head: true })
-    .eq("user_id", userId)
+  let totalLeaves = 0, approvedLeaves = 0, pendingLeaves = 0, rejectedLeaves = 0
+  if (canReadRequests) {
+    const { count: total } = await supabaseAdmin
+      .from("leave_requests")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", userId)
+    totalLeaves = total || 0
 
-  const { count: approvedLeaves } = await supabaseAdmin
-    .from("leave_requests")
-    .select("*", { count: "exact", head: true })
-    .eq("user_id", userId)
-    .eq("status", "APPROVED")
+    const { count: approved } = await supabaseAdmin
+      .from("leave_requests")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("status", "APPROVED")
+    approvedLeaves = approved || 0
 
-  const { count: pendingLeaves } = await supabaseAdmin
-    .from("leave_requests")
-    .select("*", { count: "exact", head: true })
-    .eq("user_id", userId)
-    .eq("status", "PENDING")
+    const { count: pending } = await supabaseAdmin
+      .from("leave_requests")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("status", "PENDING")
+    pendingLeaves = pending || 0
 
-  const { count: rejectedLeaves } = await supabaseAdmin
-    .from("leave_requests")
-    .select("*", { count: "exact", head: true })
-    .eq("user_id", userId)
-    .eq("status", "REJECTED")
+    const { count: rejected } = await supabaseAdmin
+      .from("leave_requests")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("status", "REJECTED")
+    rejectedLeaves = rejected || 0
+  }
 
   const stats = {
     totalLeaves: totalLeaves || 0,
@@ -95,11 +115,11 @@ async function getDashboardData(userId: string, role: string) {
     rejectedLeaves: rejectedLeaves || 0,
   }
 
-  return { 
-    leaveBalances: leaveBalances || [], 
-    recentRequests: recentRequests || [], 
-    pendingApprovalsCount, 
-    stats 
+  return {
+    leaveBalances: leaveBalances || [],
+    recentRequests: recentRequests || [],
+    pendingApprovalsCount,
+    stats
   }
 }
 
@@ -112,11 +132,18 @@ export default async function DashboardPage() {
   const userId = session.user.id
   const userRole = session.user.role || "EMPLOYEE"
 
+
   // Get user profile for additional details
   const { user: userProfile } = await getUserProfile(userId)
-  
+
   // Use profile data if available, otherwise use session data
   const firstName = userProfile?.first_name || session.user.firstName || session.user.name || "User"
+  const lastName = userProfile?.last_name || ""
+  const fullName = `${firstName} ${lastName}`.trim()
+  const email = userProfile?.email || session.user.email || ""
+  const role = userProfile?.role || userRole
+  const department = userProfile?.department?.name || "Not assigned"
+  const position = userProfile?.position || "Not specified"
 
   let leaveBalances: any[] = []
   let recentRequests: any[] = []
@@ -281,7 +308,7 @@ export default async function DashboardPage() {
                         {formatDate(request.end_date)}
                       </p>
                     </div>
-                    <Badge className={getStatusColor(request.status)}>
+                    <Badge className={request.status}>
                       {request.status}
                     </Badge>
                   </div>

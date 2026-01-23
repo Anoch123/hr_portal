@@ -41,10 +41,10 @@ export default function ReportsPage() {
 
   const fetchDepartments = async () => {
     try {
-      const response = await fetch('/api/employees?limit=1000')
+      const response = await fetch('/api/departments?limit=1000')
       const data = await response.json()
-      const uniqueDepts = [...new Set(data.employees.map((emp: any) => emp.department).filter(Boolean))] as string[]
-      setDepartments(uniqueDepts)
+      const deptNames = data.departments.map((dept: any) => dept.name)
+      setDepartments(deptNames)
     } catch (error) {
       console.error('Failed to fetch departments:', error)
     }
