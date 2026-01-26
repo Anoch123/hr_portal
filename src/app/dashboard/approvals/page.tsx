@@ -151,6 +151,12 @@ export default function ApprovalsPage() {
       </div>
 
       <Card>
+        {/* <CardHeader>
+          <CardTitle>Leave Requests Awaiting Approval</CardTitle>
+          <CardDescription>
+            {requests.length} request(s) pending your approval
+          </CardDescription>
+        </CardHeader> */}
         <CardContent>
           {loading ? (
             <p className="text-center py-4">Loading...</p>
