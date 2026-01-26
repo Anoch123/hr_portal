@@ -256,26 +256,52 @@ export async function POST(request: NextRequest) {
     }
 
     // Send email to manager if requires approval
-    if (leaveType.requires_approval && userProfile?.manager_id) {
-      const { data: manager } = await supabaseAdmin
+    if (leaveType.requires_approval) {
+      // Send to manager if exists
+      if (userProfile?.manager_id) {
+        const { data: manager } = await supabaseAdmin
+          .from('users')
+          .select('email, first_name, last_name')
+          .eq('id', userProfile.manager_id)
+          .single()
+
+        if (manager) {
+          const emailContent = emailTemplates.leaveRequestSubmitted(
+            `${userProfile.first_name} ${userProfile.last_name}`,
+            leaveType.name,
+            formatDate(start),
+            formatDate(end),
+            `${manager.first_name} ${manager.last_name}`
+          )
+          await sendEmail({
+            to: manager.email,
+            subject: emailContent.subject,
+            html: emailContent.html,
+          })
+        }
+      }
+
+      // Send to HR managers and admins
+      const { data: admins } = await supabaseAdmin
         .from('users')
         .select('email, first_name, last_name')
-        .eq('id', userProfile.manager_id)
-        .single()
+        .in('role', ['ADMIN', 'HR_MANAGER'])
 
-      if (manager) {
-        const emailContent = emailTemplates.leaveRequestSubmitted(
-          `${userProfile.first_name} ${userProfile.last_name}`,
-          leaveType.name,
-          formatDate(start),
-          formatDate(end),
-          `${manager.first_name} ${manager.last_name}`
-        )
-        await sendEmail({
-          to: manager.email,
-          subject: emailContent.subject,
-          html: emailContent.html,
-        })
+      if (admins && admins.length > 0) {
+        for (const admin of admins) {
+          const emailContent = emailTemplates.leaveRequestSubmitted(
+            `${userProfile.first_name} ${userProfile.last_name}`,
+            leaveType.name,
+            formatDate(start),
+            formatDate(end),
+            `${admin.first_name} ${admin.last_name}`
+          )
+          await sendEmail({
+            to: admin.email,
+            subject: emailContent.subject,
+            html: emailContent.html,
+          })
+        }
       }
     }
 

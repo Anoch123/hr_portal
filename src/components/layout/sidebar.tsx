@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useSession, signOut } from "next-auth/react"
-import { cn } from "@/lib/utils"
+import { cn, formatDate } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { getInitials, formatRole } from "@/lib/utils"
@@ -203,7 +203,11 @@ export function Sidebar() {
       <Dialog open={profileOpen} onOpenChange={handleProfileOpenChange}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Profile Information</DialogTitle>
+            <DialogTitle>Profile Information{userProfile.email_verified ? (
+              <Badge variant="default" className="text-xs bg-green-500 ml-2">Verified User</Badge>
+            ) : (
+              <Badge variant="destructive" className="text-xs">Unverified User</Badge>
+            )}</DialogTitle>
             <DialogDescription>Your account details</DialogDescription>
           </DialogHeader>
           {profileLoading ? (
@@ -217,13 +221,12 @@ export function Sidebar() {
                   <p className="text-sm font-medium text-muted-foreground">Full Name</p>
                   <p className="text-sm">{userProfile.first_name} {userProfile.last_name}</p>
                 </div>
+
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Email</p>
-                  <p className="text-sm">{userProfile.email}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Role</p>
-                  <Badge variant="secondary">{formatRole(userProfile.role)}</Badge>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm">{userProfile.email}</p>
+                  </div>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Department</p>
@@ -239,6 +242,14 @@ export function Sidebar() {
                     <p className="text-sm">{userProfile.employee_no}</p>
                   </div>
                 )}
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Created At</p>
+                  <p className="text-sm">{formatDate(userProfile.created_at) || "Not specified"}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Updated At</p>
+                  <p className="text-sm">{formatDate(userProfile.updated_at) || "Not specified"}</p>
+                </div>
               </div>
             </div>
           ) : (

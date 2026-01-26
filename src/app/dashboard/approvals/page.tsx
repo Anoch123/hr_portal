@@ -24,7 +24,7 @@ import {
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { formatDate } from "@/lib/utils"
-import { Check, X, Eye } from "lucide-react"
+import { Check, X, Eye, Loader2 } from "lucide-react"
 
 interface User {
   id: string
@@ -60,7 +60,7 @@ export default function ApprovalsPage() {
   const [viewDialogOpen, setViewDialogOpen] = useState(false)
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false)
   const [rejectionReason, setRejectionReason] = useState("")
-  const [processing, setProcessing] = useState(false)
+  const [processingRequests, setProcessingRequests] = useState<Set<string>>(new Set())
   const [error, setError] = useState("")
 
   useEffect(() => {
@@ -80,7 +80,7 @@ export default function ApprovalsPage() {
   }
 
   const handleApprove = async (requestId: string) => {
-    setProcessing(true)
+    setProcessingRequests(prev => new Set(prev).add(requestId))
     setError("")
     try {
       const res = await fetch(`/api/leave-requests/${requestId}/approve`, {
@@ -98,7 +98,11 @@ export default function ApprovalsPage() {
     } catch (err) {
       setError("An error occurred. Please try again.")
     } finally {
-      setProcessing(false)
+      setProcessingRequests(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(requestId)
+        return newSet
+      })
     }
   }
 
@@ -108,7 +112,7 @@ export default function ApprovalsPage() {
       return
     }
 
-    setProcessing(true)
+    setProcessingRequests(prev => new Set(prev).add(selectedRequest.id))
     setError("")
     try {
       const res = await fetch(`/api/leave-requests/${selectedRequest.id}/reject`, {
@@ -129,7 +133,11 @@ export default function ApprovalsPage() {
     } catch (err) {
       setError("An error occurred. Please try again.")
     } finally {
-      setProcessing(false)
+      setProcessingRequests(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(selectedRequest.id)
+        return newSet
+      })
     }
   }
 
@@ -199,9 +207,13 @@ export default function ApprovalsPage() {
                           size="sm"
                           className="text-green-600 hover:text-green-700"
                           onClick={() => handleApprove(request.id)}
-                          disabled={processing}
+                          disabled={processingRequests.has(request.id)}
                         >
-                          <Check className="h-4 w-4" />
+                          {processingRequests.has(request.id) ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Check className="h-4 w-4" />
+                          )}
                         </Button>
                         <Button
                           variant="ghost"
@@ -307,9 +319,16 @@ export default function ApprovalsPage() {
             </Button>
             <Button
               onClick={() => selectedRequest && handleApprove(selectedRequest.id)}
-              disabled={processing}
+              disabled={!selectedRequest || processingRequests.has(selectedRequest.id)}
             >
-              {processing ? "Processing..." : "Approve"}
+              {selectedRequest && processingRequests.has(selectedRequest.id) ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                "Approve"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -352,9 +371,16 @@ export default function ApprovalsPage() {
             <Button
               variant="destructive"
               onClick={handleReject}
-              disabled={processing || !rejectionReason}
+              disabled={!selectedRequest || processingRequests.has(selectedRequest.id) || !rejectionReason}
             >
-              {processing ? "Rejecting..." : "Reject Request"}
+              {selectedRequest && processingRequests.has(selectedRequest.id) ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Rejecting...
+                </>
+              ) : (
+                "Reject Request"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

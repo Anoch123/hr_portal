@@ -15,12 +15,22 @@ export async function GET(request: NextRequest) {
       .select('*, department:departments(*)')
       .eq('id', session.user.id)
       .single()
-    
+
     if (error || !user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    return NextResponse.json({ user })
+    // Get email verification status from auth.users
+    const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(session.user.id)
+
+    const emailVerified = authUser?.user?.email_confirmed_at ? true : false
+
+    return NextResponse.json({
+      user: {
+        ...user,
+        email_verified: emailVerified
+      }
+    })
   } catch (error) {
     console.error("Error fetching user profile:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
