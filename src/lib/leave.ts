@@ -291,3 +291,33 @@ export async function getPendingApprovals(managerId: string) {
     return { requests: [], error }
   }
 }
+
+export async function isUserOnProbation(userId: string) {
+  try {
+    const { data: user, error } = await supabaseAdmin
+      .from('users')
+      .select('is_on_probation, probation_start_date, probation_period_months')
+      .eq('id', userId)
+      .single()
+
+    if (error || !user) {
+      return { isOnProbation: false, error }
+    }
+
+    if (!user.is_on_probation || !user.probation_start_date) {
+      return { isOnProbation: false, error: null }
+    }
+
+    // Calculate probation end date
+    const startDate = new Date(user.probation_start_date)
+    const endDate = new Date(startDate)
+    endDate.setMonth(endDate.getMonth() + user.probation_period_months)
+
+    const now = new Date()
+    const isOnProbation = now >= startDate && now <= endDate
+
+    return { isOnProbation, error: null }
+  } catch (error) {
+    return { isOnProbation: false, error }
+  }
+}

@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth-config"
 import { supabase } from "@/lib/supabase"
 import { supabaseAdmin } from "@/lib/supabase-admin"
-import { getLeaveRequests, createLeaveRequest as createRequest } from "@/lib/leave"
+import { getLeaveRequests, createLeaveRequest as createRequest, isUserOnProbation } from "@/lib/leave"
 import { sendEmail, emailTemplates } from "@/lib/email"
 import { calculateBusinessDays, formatDate } from "@/lib/utils"
 import { hasPermission } from "@/lib/auth"
@@ -108,6 +108,23 @@ export async function POST(request: NextRequest) {
     if (!['FULL', 'HALF', 'SHORT'].includes(leaveMode)) {
       return NextResponse.json(
         { error: "Invalid leave mode" },
+        { status: 400 }
+      )
+    }
+
+    // Check if user is on probation and restrict leave modes
+    const { isOnProbation, error: probationError } = await isUserOnProbation(userId)
+    if (probationError) {
+      console.error("Error checking probation status:", probationError)
+      return NextResponse.json(
+        { error: "Failed to check probation status" },
+        { status: 500 }
+      )
+    }
+
+    if (isOnProbation && leaveMode !== 'HALF') {
+      return NextResponse.json(
+        { error: "Employees on probation can only request half-day leave" },
         { status: 400 }
       )
     }

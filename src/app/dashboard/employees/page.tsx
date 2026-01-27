@@ -31,6 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch"
 import { formatDate, getRoleColor, formatRole } from "@/lib/utils"
 import { Plus, Search, Edit, UserX, Calendar } from "lucide-react"
 import { read } from "fs"
@@ -71,6 +72,9 @@ interface Employee {
     first_name: string
     last_name: string
   } | null
+  is_on_probation?: boolean
+  probation_start_date?: string | null
+  probation_period_months?: number
 }
 
 interface LeaveType {
@@ -119,6 +123,9 @@ export default function EmployeesPage() {
     joining_date: "",
     employee_no: "",
     managerId: "none",
+    isOnProbation: false,
+    probationStartDate: "",
+    probationPeriodMonths: 6,
   })
   const [balanceFormData, setBalanceFormData] = useState({
     leaveTypeId: "",
@@ -216,6 +223,9 @@ export default function EmployeesPage() {
       const payload = {
         ...formData,
         managerId: formData.managerId === "none" ? null : formData.managerId,
+        is_on_probation: formData.isOnProbation,
+        probation_start_date: formData.isOnProbation ? formData.probationStartDate || formData.joining_date : null,
+        probation_period_months: formData.probationPeriodMonths,
       }
 
       const res = await fetch("/api/employees", {
@@ -250,6 +260,9 @@ export default function EmployeesPage() {
         ...formData,
         department_id: formData.departmentId || null,
         managerId: formData.managerId === "none" ? null : formData.managerId,
+        is_on_probation: formData.isOnProbation,
+        probation_start_date: formData.isOnProbation ? formData.probationStartDate : null,
+        probation_period_months: formData.probationPeriodMonths,
       }
 
       const res = await fetch(`/api/employees/${selectedEmployee.id}`, {
@@ -408,6 +421,9 @@ export default function EmployeesPage() {
       joining_date: "",
       employee_no: "",
       managerId: "none",
+      isOnProbation: false,
+      probationStartDate: "",
+      probationPeriodMonths: 6,
     })
     setError("")
     setSelectedEmployee(null)
@@ -436,6 +452,9 @@ export default function EmployeesPage() {
       joining_date: employee.joining_date || "",
       employee_no: employee.employee_no || "",
       managerId: employee.manager?.id || "none",
+      isOnProbation: employee.is_on_probation || false,
+      probationStartDate: employee.probation_start_date || "",
+      probationPeriodMonths: employee.probation_period_months || 6,
     })
     setEditDialogOpen(true)
   }
@@ -607,6 +626,83 @@ export default function EmployeesPage() {
                   </SelectContent>
                 </Select>
               </div>
+              <div className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="probation"
+                    checked={formData.isOnProbation}
+                    onCheckedChange={(checked) =>
+                      setFormData({ ...formData, isOnProbation: checked })
+                    }
+                  />
+                  <Label htmlFor="probation">On Probation</Label>
+                </div>
+                {formData.isOnProbation && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Probation Start Date</Label>
+                      <Input
+                        type="date"
+                        value={formData.probationStartDate}
+                        onChange={(e) =>
+                          setFormData({ ...formData, probationStartDate: e.target.value })
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Probation Period (Months)</Label>
+                      <Input
+                        type="number"
+                        min="1"
+                        value={formData.probationPeriodMonths}
+                        onChange={(e) =>
+                          setFormData({ ...formData, probationPeriodMonths: parseInt(e.target.value) || 6 })
+                        }
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="probation-edit"
+                    checked={formData.isOnProbation}
+                    disabled={formData.role === "ADMIN"}
+                    onCheckedChange={(checked) =>
+                      setFormData({ ...formData, isOnProbation: checked })
+                    }
+                  />
+                  <Label htmlFor="probation-edit">On Probation</Label>
+                </div>
+                {formData.isOnProbation && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Probation Start Date</Label>
+                      <Input
+                        type="date"
+                        value={formData.probationStartDate}
+                        disabled={formData.role === "ADMIN"}
+                        onChange={(e) =>
+                          setFormData({ ...formData, probationStartDate: e.target.value })
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Probation Period (Months)</Label>
+                      <Input
+                        type="number"
+                        min="1"
+                        value={formData.probationPeriodMonths}
+                        disabled={formData.role === "ADMIN"}
+                        onChange={(e) =>
+                          setFormData({ ...formData, probationPeriodMonths: parseInt(e.target.value) || 6 })
+                        }
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setDialogOpen(false)}>
@@ -661,6 +757,7 @@ export default function EmployeesPage() {
                   <TableHead>Manager</TableHead>
                   <TableHead>Leave Balance</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Probation</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -698,6 +795,13 @@ export default function EmployeesPage() {
                       >
                         {employee.is_active ? "Active" : "Inactive"}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {employee.is_on_probation ? (
+                        <Badge variant="destructive">On Probation</Badge>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">

@@ -94,6 +94,9 @@ export async function POST(request: NextRequest) {
     const joining_date = body.joining_date
     const employee_no = body.employee_no
     const managerId = body.managerId
+    const is_on_probation = body.is_on_probation || body.isOnProbation || false
+    const probation_start_date = body.probation_start_date || body.probationStartDate
+    const probation_period_months = body.probation_period_months || body.probationPeriodMonths || 6
 
     // Validate required fields
     if (!email || !first_name || !last_name) {
@@ -151,6 +154,9 @@ export async function POST(request: NextRequest) {
         joining_date,
         employee_no,
         manager_id: managerId,
+        is_on_probation,
+        probation_start_date: is_on_probation ? probation_start_date || joining_date : null,
+        probation_period_months,
       })
       .select()
       .single()

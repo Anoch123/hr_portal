@@ -61,6 +61,7 @@ export default function LeavesPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
   const [selectedRequest, setSelectedRequest] = useState<LeaveRequest | null>(null)
+  const [isOnProbation, setIsOnProbation] = useState(false)
 
   // Form state
   const [leaveTypeId, setLeaveTypeId] = useState("")
@@ -74,6 +75,7 @@ export default function LeavesPage() {
   useEffect(() => {
     fetchRequests()
     fetchLeaveTypes()
+    checkProbationStatus()
   }, [])
 
   const fetchRequests = async () => {
@@ -96,6 +98,26 @@ export default function LeavesPage() {
       setLeaveTypes(data || [])
     } catch (err) {
       console.error("Error fetching leave types:", err)
+    }
+  }
+
+  const checkProbationStatus = async () => {
+    try {
+      const res = await fetch("/api/auth/profile")
+      const profile = await res.json()
+      if (profile.is_on_probation) {
+        // Check if still on probation
+        const startDate = new Date(profile.probation_start_date)
+        const endDate = new Date(startDate)
+        endDate.setMonth(endDate.getMonth() + profile.probation_period_months)
+        const now = new Date()
+        setIsOnProbation(now >= startDate && now <= endDate)
+        if (now >= startDate && now <= endDate) {
+          setLeaveMode('HALF') // Set default to HALF for probationary employees
+        }
+      }
+    } catch (err) {
+      console.error("Error checking probation status:", err)
     }
   }
 
@@ -218,16 +240,32 @@ export default function LeavesPage() {
               </div>
               <div className="space-y-2">
                 <Label>Leave Mode *</Label>
-                <Select value={leaveMode} onValueChange={(value: 'FULL' | 'HALF' | 'SHORT') => setLeaveMode(value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select leave mode" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="FULL">Full Day</SelectItem>
-                    <SelectItem value="HALF">Half Day</SelectItem>
-                    <SelectItem value="SHORT">Short Leave</SelectItem>
-                  </SelectContent>
-                </Select>
+                {isOnProbation ? (
+                  <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                    <p className="text-sm text-yellow-800">
+                      You are currently on probation. Only half-day leave is allowed.
+                    </p>
+                    <Select value={leaveMode} onValueChange={(value: 'FULL' | 'HALF' | 'SHORT') => setLeaveMode(value)}>
+                      <SelectTrigger className="mt-2">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="HALF">Half Day</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ) : (
+                  <Select value={leaveMode} onValueChange={(value: 'FULL' | 'HALF' | 'SHORT') => setLeaveMode(value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select leave mode" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="FULL">Full Day</SelectItem>
+                      <SelectItem value="HALF">Half Day</SelectItem>
+                      <SelectItem value="SHORT">Short Leave</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
