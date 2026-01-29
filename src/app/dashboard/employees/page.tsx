@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import {
   Table,
@@ -32,9 +32,14 @@ import {
 } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
-import { formatDate, getRoleColor, formatRole } from "@/lib/utils"
-import { Plus, Search, Edit, UserX, Calendar } from "lucide-react"
-import { read } from "fs"
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs"
+import { formatRole } from "@/lib/utils"
+import { Plus, Search, Edit, UserX, Calendar, UserMinus } from "lucide-react"
 
 interface LeaveBalance {
   id: string
@@ -52,30 +57,32 @@ interface LeaveBalance {
 }
 
 interface Employee {
-  id: string
-  email: string
-  first_name: string
-  last_name: string
-  role: string
-  department: {
-    id: string
-    name: string
-  } | null
-  position: string | null
-  nic_no: string | null
-  joining_date: string | null
-  employee_no: string | null
-  is_active: boolean
-  createdAt: string
-  manager: {
-    id: string
-    first_name: string
-    last_name: string
-  } | null
-  is_on_probation?: boolean
-  probation_start_date?: string | null
-  probation_period_months?: number
-}
+   id: string
+   email: string
+   first_name: string
+   last_name: string
+   role: string
+   department: {
+     id: string
+     name: string
+   } | null
+   position: string | null
+   nic_no: string | null
+   joining_date: string | null
+   employee_no: string | null
+   is_active: boolean
+   resignation_date?: string | null
+   termination_reason?: string | null
+   createdAt: string
+   manager: {
+     id: string
+     first_name: string
+     last_name: string
+   } | null
+   is_on_probation?: boolean
+   probation_start_date?: string | null
+   probation_period_months?: number
+ }
 
 interface LeaveType {
   id: string
@@ -102,10 +109,10 @@ export default function EmployeesPage() {
   const [employeeBalancesMap, setEmployeeBalancesMap] = useState<Record<string, LeaveBalance[]>>({})
   const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([])
   const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState("")
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [balanceDialogOpen, setBalanceDialogOpen] = useState(false)
+  const [resignDialogOpen, setResignDialogOpen] = useState(false)
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null)
   const [employeeBalances, setEmployeeBalances] = useState<LeaveBalance[]>([])
   const [editingBalance, setEditingBalance] = useState<LeaveBalance | null>(null)
@@ -133,20 +140,59 @@ export default function EmployeesPage() {
     carriedOver: "0",
     year: new Date().getFullYear().toString(),
   })
+  const [resignFormData, setResignFormData] = useState({
+    resignationDate: "",
+    terminationReason: "",
+  })
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState("")
+  const [activeTab, setActiveTab] = useState("employees")
+
+  // Individual search states for each tab
+  const [employeesSearch, setEmployeesSearch] = useState("")
+  const [probationSearch, setProbationSearch] = useState("")
+  const [resignedSearch, setResignedSearch] = useState("")
+  const [managersSearch, setManagersSearch] = useState("")
+  const [adminsSearch, setAdminsSearch] = useState("")
+
+  // Helper function to filter employees by search term
+  const filterBySearch = (employeeList: Employee[], searchTerm: string) => {
+    if (!searchTerm) return employeeList
+    const lowerSearch = searchTerm.toLowerCase()
+    return employeeList.filter(emp =>
+      emp.first_name.toLowerCase().includes(lowerSearch) ||
+      emp.last_name.toLowerCase().includes(lowerSearch) ||
+      emp.email.toLowerCase().includes(lowerSearch) ||
+      (emp.employee_no && emp.employee_no.toLowerCase().includes(lowerSearch)) ||
+      (emp.department?.name && emp.department.name.toLowerCase().includes(lowerSearch))
+    )
+  }
+
+  // Filter employees by category with search
+  const baseConfirmedEmployees = employees.filter(emp => emp.is_active && !emp.is_on_probation && emp.role === "EMPLOYEE")
+  const baseProbationEmployees = employees.filter(emp => emp.is_on_probation)
+  const baseResignedEmployees = employees.filter(emp => !emp.is_active && emp.resignation_date)
+  const baseManagers = employees.filter(emp => ["MANAGER", "HR_MANAGER"].includes(emp.role))
+  const baseAdmins = employees.filter(emp => emp.role === "ADMIN")
+
+  // Apply search filters
+  const confirmedEmployees = filterBySearch(baseConfirmedEmployees, employeesSearch)
+  const probationEmployees = filterBySearch(baseProbationEmployees, probationSearch)
+  const resignedEmployees = filterBySearch(baseResignedEmployees, resignedSearch)
+  const filteredManagers = filterBySearch(baseManagers, managersSearch)
+  const filteredAdmins = filterBySearch(baseAdmins, adminsSearch)
 
   useEffect(() => {
     fetchEmployees()
     fetchLeaveTypes()
     fetchDepartments()
-  }, [search])
+  }, [])
 
   const fetchEmployees = async () => {
     try {
       const params = new URLSearchParams()
-      if (search) params.append("search", search)
       params.append("limit", "100")
+      params.append("include_inactive", "true")
 
       const res = await fetch(`/api/employees?${params}`)
       const data = await res.json()
@@ -288,22 +334,63 @@ export default function EmployeesPage() {
   }
 
   const handleDeactivate = async (employeeId: string) => {
-    if (!confirm("Are you sure you want to deactivate this employee?")) return
+    if (!confirm("Are you sure you want to terminate this employee? This action cannot be undone.")) return
 
     try {
       const res = await fetch(`/api/employees/${employeeId}`, {
-        method: "DELETE",
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ is_active: false }),
       })
 
       if (!res.ok) {
         const data = await res.json()
-        alert(data.error || "Failed to deactivate employee")
+        alert(data.error || "Failed to terminate employee")
         return
       }
 
       fetchEmployees()
     } catch (err) {
       alert("An error occurred. Please try again.")
+    }
+  }
+
+  const handleResign = async () => {
+    if (!selectedEmployee) return
+
+    setError("")
+    if (!resignFormData.resignationDate) {
+      setError("Please select a resignation date")
+      return
+    }
+
+    setSubmitting(true)
+    try {
+      const payload = {
+        is_active: false,
+        resignation_date: resignFormData.resignationDate,
+        termination_reason: resignFormData.terminationReason || "Resignation",
+      }
+
+      const res = await fetch(`/api/employees/${selectedEmployee.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+
+      const data = await res.json()
+      if (!res.ok) {
+        setError(data.error || "Failed to process resignation")
+        return
+      }
+
+      setResignDialogOpen(false)
+      resetResignForm()
+      fetchEmployees()
+    } catch (err) {
+      setError("An error occurred. Please try again.")
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -439,6 +526,14 @@ export default function EmployeesPage() {
     setError("")
   }
 
+  const resetResignForm = () => {
+    setResignFormData({
+      resignationDate: "",
+      terminationReason: "",
+    })
+    setError("")
+  }
+
   const openEditDialog = (employee: Employee) => {
     setSelectedEmployee(employee)
     setFormData({
@@ -459,11 +554,129 @@ export default function EmployeesPage() {
     setEditDialogOpen(true)
   }
 
+  const openResignDialog = (employee: Employee) => {
+    setSelectedEmployee(employee)
+    setResignFormData({
+      resignationDate: "",
+      terminationReason: "",
+    })
+    setResignDialogOpen(true)
+  }
+
+  const renderEmployeeTable = (employeeList: Employee[]) => (
+    <div className="overflow-x-auto">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="min-w-[150px]">Name</TableHead>
+            <TableHead className="min-w-[100px]">Role</TableHead>
+            <TableHead className="min-w-[120px]">Department</TableHead>
+            <TableHead className="min-w-[100px]">Leave Balance</TableHead>
+            <TableHead className="min-w-[80px]">Status</TableHead>
+            <TableHead className="min-w-[100px]">Probation</TableHead>
+            <TableHead className="min-w-[150px]">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {employeeList.map((employee) => (
+            <TableRow key={employee.id}>
+              <TableCell className="font-medium">
+                <div className="flex flex-col">
+                  <span>{employee.first_name} {employee.last_name}</span>
+                  <span className="text-xs text-muted-foreground">{employee.email}</span>
+                </div>
+              </TableCell>
+              <TableCell>
+                <Badge variant="outline" className="text-xs">
+                  {formatRole(employee.role)}
+                </Badge>
+              </TableCell>
+              <TableCell className="text-sm">{employee.department?.name || "-"}</TableCell>
+              <TableCell className="text-sm">
+                {(() => {
+                  const balances = employeeBalancesMap[employee.id] || []
+                  const totalAvailable = balances.reduce((sum, b) => sum + (b.total_days + b.carried_over - b.used_days - b.pending_days), 0)
+                  return totalAvailable > 0 ? totalAvailable.toFixed(1) : "-"
+                })()}
+              </TableCell>
+              <TableCell>
+                <Badge
+                  variant={
+                    employee.is_active
+                      ? "default"
+                      : employee.resignation_date
+                      ? "outline"
+                      : "destructive"
+                  }
+                  className="text-xs"
+                >
+                  {employee.is_active
+                    ? "Active"
+                    : employee.resignation_date
+                    ? "Resigned"
+                    : "Terminated"}
+                </Badge>
+              </TableCell>
+              <TableCell>
+                {employee.is_on_probation ? (
+                  <Badge variant="destructive" className="text-xs">On Probation</Badge>
+                ) : (
+                  <span className="text-muted-foreground">-</span>
+                )}
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center gap-1 flex-wrap">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => openEditDialog(employee)}
+                    className="h-8 w-8 p-0"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => openBalanceDialog(employee)}
+                    className="h-8 w-8 p-0"
+                  >
+                    <Calendar className="h-4 w-4" />
+                  </Button>
+                  {employee.is_active && employee.role !== "ADMIN" && (
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-orange-600 hover:text-orange-700 h-8 w-8 p-0"
+                        onClick={() => openResignDialog(employee)}
+                      >
+                        <UserMinus className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-600 hover:text-red-700 h-8 w-8 p-0"
+                        onClick={() => handleDeactivate(employee.id)}
+                      >
+                        <UserX className="h-4 w-4" />
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  )
+
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Employees ({employees.length})</h1>
+          <h1 className="text-3xl font-bold">Employee Management</h1>
           <p className="text-muted-foreground">
             Manage employee accounts and information
           </p>
@@ -663,46 +876,6 @@ export default function EmployeesPage() {
                   </div>
                 )}
               </div>
-              <div className="space-y-4">
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="probation-edit"
-                    checked={formData.isOnProbation}
-                    disabled={formData.role === "ADMIN"}
-                    onCheckedChange={(checked) =>
-                      setFormData({ ...formData, isOnProbation: checked })
-                    }
-                  />
-                  <Label htmlFor="probation-edit">On Probation</Label>
-                </div>
-                {formData.isOnProbation && (
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Probation Start Date</Label>
-                      <Input
-                        type="date"
-                        value={formData.probationStartDate}
-                        disabled={formData.role === "ADMIN"}
-                        onChange={(e) =>
-                          setFormData({ ...formData, probationStartDate: e.target.value })
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Probation Period (Months)</Label>
-                      <Input
-                        type="number"
-                        min="1"
-                        value={formData.probationPeriodMonths}
-                        disabled={formData.role === "ADMIN"}
-                        onChange={(e) =>
-                          setFormData({ ...formData, probationPeriodMonths: parseInt(e.target.value) || 6 })
-                        }
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setDialogOpen(false)}>
@@ -717,124 +890,144 @@ export default function EmployeesPage() {
       </div>
 
       <Card>
-        <CardHeader>
+        {/* <CardHeader>
           <div className="flex items-center justify-between">
-            {/* <div>
-              <CardTitle>Employee List</CardTitle>
-              <CardDescription>
-                {employees.length} employee(s) found
-              </CardDescription>
-            </div> */}
-            <div className="relative w-64">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search employees..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-8"
-              />
+            <div>
+              <h2 className="text-lg font-semibold">Employee Management</h2>
+              <p className="text-sm text-muted-foreground">
+                Manage employees by category with individual search
+              </p>
             </div>
           </div>
-        </CardHeader>
+        </CardHeader> */}
         <CardContent>
           {loading ? (
             <p className="text-center py-4">Loading...</p>
-          ) : employees.length === 0 ? (
-            <p className="text-center py-4 text-muted-foreground">
-              No employees found.
-            </p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Employee No</TableHead>
-                  <TableHead>NIC No</TableHead>
-                  <TableHead>Joining Date</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Department</TableHead>
-                  <TableHead>Manager</TableHead>
-                  <TableHead>Leave Balance</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Probation</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {employees.map((employee) => (
-                  <TableRow key={employee.id}>
-                    <TableCell className="font-medium">
-                      {employee.first_name} {employee.last_name}
-                    </TableCell>
-                    <TableCell>{employee.email}</TableCell>
-                    <TableCell>{employee.employee_no || "-"}</TableCell>
-                    <TableCell>{employee.nic_no || "-"}</TableCell>
-                    <TableCell>{employee.joining_date ? formatDate(employee.joining_date) : "-"}</TableCell>
-                    <TableCell>
-                      <Badge className={employee.role}>
-                        {formatRole(employee.role)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{employee.department?.name || "-"}</TableCell>
-                    <TableCell>
-                      {employee.manager
-                        ? `${employee.manager.first_name} ${employee.manager.last_name}`
-                        : "-"}
-                    </TableCell>
-                    <TableCell>
-                      {(() => {
-                        const balances = employeeBalancesMap[employee.id] || []
-                        const totalAvailable = balances.reduce((sum, b) => sum + (b.total_days + b.carried_over - b.used_days - b.pending_days), 0)
-                        return totalAvailable > 0 ? totalAvailable.toFixed(1) : "-"
-                      })()}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={employee.is_active ? "success" : "secondary"}
-                      >
-                        {employee.is_active ? "Active" : "Inactive"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {employee.is_on_probation ? (
-                        <Badge variant="destructive">On Probation</Badge>
-                      ) : (
-                        <span className="text-muted-foreground">-</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openEditDialog(employee)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openBalanceDialog(employee)}
-                        >
-                          <Calendar className="h-4 w-4" />
-                        </Button>
-                        {employee.is_active && employee.role !== "ADMIN" && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-red-600 hover:text-red-700"
-                            onClick={() => handleDeactivate(employee.id)}
-                          >
-                            <UserX className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full mt-4">
+              <TabsList className="flex w-full flex-wrap h-auto p-1">
+                <TabsTrigger value="employees" className="flex-1 min-w-0 text-xs sm:text-sm px-2 py-1.5">
+                  <span className="truncate">Employees ({baseConfirmedEmployees.length})</span>
+                </TabsTrigger>
+                <TabsTrigger value="probation" className="flex-1 min-w-0 text-xs sm:text-sm px-2 py-1.5">
+                  <span className="truncate">Probation ({baseProbationEmployees.length})</span>
+                </TabsTrigger>
+                <TabsTrigger value="resigned" className="flex-1 min-w-0 text-xs sm:text-sm px-2 py-1.5">
+                  <span className="truncate">Resigned ({baseResignedEmployees.length})</span>
+                </TabsTrigger>
+                <TabsTrigger value="managers" className="flex-1 min-w-0 text-xs sm:text-sm px-2 py-1.5">
+                  <span className="truncate">Managers ({baseManagers.length})</span>
+                </TabsTrigger>
+                <TabsTrigger value="admins" className="flex-1 min-w-0 text-xs sm:text-sm px-2 py-1.5">
+                  <span className="truncate">Admins ({baseAdmins.length})</span>
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="employees">
+                <div className="mb-4">
+                  <div className="relative max-w-sm">
+                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search employees..."
+                      value={employeesSearch}
+                      onChange={(e) => setEmployeesSearch(e.target.value)}
+                      className="pl-8"
+                    />
+                  </div>
+                </div>
+                {confirmedEmployees.length === 0 ? (
+                  <p className="text-center py-4 text-muted-foreground">
+                    {employeesSearch ? "No employees match your search." : "No confirmed employees found."}
+                  </p>
+                ) : (
+                  renderEmployeeTable(confirmedEmployees)
+                )}
+              </TabsContent>
+
+              <TabsContent value="probation">
+                <div className="mb-4">
+                  <div className="relative max-w-sm">
+                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search probation employees..."
+                      value={probationSearch}
+                      onChange={(e) => setProbationSearch(e.target.value)}
+                      className="pl-8"
+                    />
+                  </div>
+                </div>
+                {probationEmployees.length === 0 ? (
+                  <p className="text-center py-4 text-muted-foreground">
+                    {probationSearch ? "No employees match your search." : "No employees on probation."}
+                  </p>
+                ) : (
+                  renderEmployeeTable(probationEmployees)
+                )}
+              </TabsContent>
+
+              <TabsContent value="resigned">
+                <div className="mb-4">
+                  <div className="relative max-w-sm">
+                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search resigned employees..."
+                      value={resignedSearch}
+                      onChange={(e) => setResignedSearch(e.target.value)}
+                      className="pl-8"
+                    />
+                  </div>
+                </div>
+                {resignedEmployees.length === 0 ? (
+                  <p className="text-center py-4 text-muted-foreground">
+                    {resignedSearch ? "No employees match your search." : "No resigned employees."}
+                  </p>
+                ) : (
+                  renderEmployeeTable(resignedEmployees)
+                )}
+              </TabsContent>
+
+              <TabsContent value="managers">
+                <div className="mb-4">
+                  <div className="relative max-w-sm">
+                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search managers..."
+                      value={managersSearch}
+                      onChange={(e) => setManagersSearch(e.target.value)}
+                      className="pl-8"
+                    />
+                  </div>
+                </div>
+                {filteredManagers.length === 0 ? (
+                  <p className="text-center py-4 text-muted-foreground">
+                    {managersSearch ? "No managers match your search." : "No managers found."}
+                  </p>
+                ) : (
+                  renderEmployeeTable(filteredManagers)
+                )}
+              </TabsContent>
+
+              <TabsContent value="admins">
+                <div className="mb-4">
+                  <div className="relative max-w-sm">
+                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search admins..."
+                      value={adminsSearch}
+                      onChange={(e) => setAdminsSearch(e.target.value)}
+                      className="pl-8"
+                    />
+                  </div>
+                </div>
+                {filteredAdmins.length === 0 ? (
+                  <p className="text-center py-4 text-muted-foreground">
+                    {adminsSearch ? "No admins match your search." : "No admins found."}
+                  </p>
+                ) : (
+                  renderEmployeeTable(filteredAdmins)
+                )}
+              </TabsContent>
+            </Tabs>
           )}
         </CardContent>
       </Card>
@@ -998,6 +1191,46 @@ export default function EmployeesPage() {
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="probation-edit"
+                  checked={formData.isOnProbation}
+                  disabled={formData.role === "ADMIN"}
+                  onCheckedChange={(checked) =>
+                    setFormData({ ...formData, isOnProbation: checked })
+                  }
+                />
+                <Label htmlFor="probation-edit">On Probation</Label>
+              </div>
+              {formData.isOnProbation && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Probation Start Date</Label>
+                    <Input
+                      type="date"
+                      value={formData.probationStartDate}
+                      disabled={formData.role === "ADMIN"}
+                      onChange={(e) =>
+                        setFormData({ ...formData, probationStartDate: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Probation Period (Months)</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      value={formData.probationPeriodMonths}
+                      disabled={formData.role === "ADMIN"}
+                      onChange={(e) =>
+                        setFormData({ ...formData, probationPeriodMonths: parseInt(e.target.value) || 6 })
+                      }
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
@@ -1158,6 +1391,53 @@ export default function EmployeesPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setBalanceDialogOpen(false)}>
               Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Resign Dialog */}
+      <Dialog open={resignDialogOpen} onOpenChange={setResignDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Process Employee Resignation</DialogTitle>
+            <DialogDescription>
+              Record resignation details for {selectedEmployee?.first_name} {selectedEmployee?.last_name}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {error && (
+              <div className="bg-red-50 text-red-500 p-3 rounded-md text-sm">
+                {error}
+              </div>
+            )}
+            <div className="space-y-2">
+              <Label>Resignation Date *</Label>
+              <Input
+                type="date"
+                value={resignFormData.resignationDate}
+                onChange={(e) =>
+                  setResignFormData({ ...resignFormData, resignationDate: e.target.value })
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Reason (Optional)</Label>
+              <Input
+                value={resignFormData.terminationReason}
+                onChange={(e) =>
+                  setResignFormData({ ...resignFormData, terminationReason: e.target.value })
+                }
+                placeholder="e.g., Personal reasons, Better opportunity"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setResignDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleResign} disabled={submitting}>
+              {submitting ? "Processing..." : "Process Resignation"}
             </Button>
           </DialogFooter>
         </DialogContent>

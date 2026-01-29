@@ -71,6 +71,8 @@ export async function PUT(
     if (body.is_on_probation !== undefined || body.isOnProbation !== undefined) updateData.is_on_probation = body.is_on_probation || body.isOnProbation
     if (body.probation_start_date !== undefined || body.probationStartDate !== undefined) updateData.probation_start_date = body.probation_start_date || body.probationStartDate
     if (body.probation_period_months !== undefined || body.probationPeriodMonths !== undefined) updateData.probation_period_months = body.probation_period_months || body.probationPeriodMonths
+    if (body.resignation_date !== undefined) updateData.resignation_date = body.resignation_date
+    if (body.termination_reason !== undefined) updateData.termination_reason = body.termination_reason
     updateData.updated_at = new Date().toISOString()
 
     const { data: employee, error } = await supabaseAdmin

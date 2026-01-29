@@ -24,10 +24,11 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get("search") || ""
     const department = searchParams.get("department") || ""
     const role = searchParams.get("role") || ""
+    const includeInactive = searchParams.get("include_inactive") === "true"
 
     let query = supabaseAdmin
       .from("users")
-      .select("*, manager:manager_id(id, first_name, last_name), department:department_id(id, name)", { count: "exact" })
+      .select("*, manager:manager_id(id, first_name, last_name), department:department_id(id, name), resignation_date, termination_reason", { count: "exact" })
 
     if (search) {
       query = query.or(
@@ -44,8 +45,11 @@ export async function GET(request: NextRequest) {
       query = query.eq("role", role)
     }
 
+    if (!includeInactive) {
+      query = query.eq("is_active", true)
+    }
+
     const { data: employees, count } = await query
-      .eq("is_active", true)
       .order("created_at", { ascending: false })
       .range((page - 1) * limit, page * limit - 1)
 
