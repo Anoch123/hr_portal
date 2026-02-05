@@ -34,6 +34,11 @@ export type Permission =
   | 'permissions:delete'
   | 'role_permissions:read'
   | 'role_permissions:update'
+  | 'attendance:read'
+  | 'attendance:create'
+  | 'attendance:update'
+  | 'attendance:delete'
+  | 'attendance:upload'
 
 // Permissions are now fetched from database
 
@@ -131,6 +136,7 @@ export const navigationItems: NavItem[] = [
   { label: 'Departments', href: '/dashboard/departments', icon: 'Building2', permission: 'departments:read' },
   { label: 'Leave Types', href: '/dashboard/leave-types', icon: 'Tag', permission: 'leave_types:read' },
   { label: 'ACL Management', href: '/dashboard/acl', icon: 'Shield', permission: 'permissions:read' }, // ACL management
+  { label: 'Attendance', href: '/dashboard/attendance', icon: 'Clock', permission: 'attendance:read' },
   { label: 'Reports', href: '/dashboard/reports', icon: 'BarChart', permission: 'reports:read' },
   { label: 'Settings', href: '/dashboard/settings', icon: 'Settings', permission: 'settings:read' },
 ]

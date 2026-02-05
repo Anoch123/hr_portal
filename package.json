@@ -36,6 +36,7 @@
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.50.1",
     "tailwind-merge": "^2.2.1",
+    "xlsx": "^0.18.5",
     "zod": "^3.22.4"
   },
   "devDependencies": {
@@ -43,6 +44,7 @@
     "@types/nodemailer": "^6.4.14",
     "@types/react": "^18.2.57",
     "@types/react-dom": "^18.2.19",
+    "@types/xlsx": "^0.0.35",
     "autoprefixer": "^10.4.17",
     "eslint": "^9.0.0",
     "eslint-config-next": "^16.1.4",

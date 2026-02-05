@@ -21,6 +21,7 @@ import {
   LogOut,
   Menu,
   X,
+  Clock,
 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
@@ -37,6 +38,7 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   BarChart,
   Shield,
   Settings,
+  Clock,
 }
 
 interface NavItem {

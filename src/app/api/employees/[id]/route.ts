@@ -53,7 +53,13 @@ export async function PUT(
       return NextResponse.json({ error: "You do not have permission to update employees." }, { status: 403 })
     }
 
-    const body = await request.json()
+    let body: any
+    try {
+      body = await request.json()
+    } catch (parseError) {
+      console.error("Error parsing request body:", parseError)
+      return NextResponse.json({ error: "Invalid JSON in request body" }, { status: 400 })
+    }
 
     // Map incoming body keys to DB column names and whitelist allowed fields
     const updateData: Record<string, any> = {}
@@ -64,16 +70,39 @@ export async function PUT(
     if (body.department_id !== undefined || body.departmentId !== undefined) updateData.department_id = body.department_id || body.departmentId
     if (body.position !== undefined) updateData.position = body.position
     if (body.nic_no !== undefined) updateData.nic_no = body.nic_no
-    if (body.joining_date !== undefined) updateData.joining_date = body.joining_date
+    // Handle date fields - convert empty strings to null
+    if (body.joining_date !== undefined) updateData.joining_date = body.joining_date ? body.joining_date : null
     if (body.employee_no !== undefined) updateData.employee_no = body.employee_no
     if (body.managerId !== undefined) updateData.manager_id = body.managerId
     if (body.is_active !== undefined) updateData.is_active = body.is_active
     if (body.is_on_probation !== undefined || body.isOnProbation !== undefined) updateData.is_on_probation = body.is_on_probation || body.isOnProbation
-    if (body.probation_start_date !== undefined || body.probationStartDate !== undefined) updateData.probation_start_date = body.probation_start_date || body.probationStartDate
+    if (body.probation_start_date !== undefined || body.probationStartDate !== undefined) {
+      const probationDate = body.probation_start_date || body.probationStartDate
+      updateData.probation_start_date = probationDate ? probationDate : null
+    }
     if (body.probation_period_months !== undefined || body.probationPeriodMonths !== undefined) updateData.probation_period_months = body.probation_period_months || body.probationPeriodMonths
-    if (body.resignation_date !== undefined) updateData.resignation_date = body.resignation_date
+    if (body.resignation_date !== undefined) updateData.resignation_date = body.resignation_date ? body.resignation_date : null
     if (body.termination_reason !== undefined) updateData.termination_reason = body.termination_reason
+    
+    // Handle probation constraint logic:
+    // - If setting is_on_probation to false, always clear probation_start_date
+    // - If setting is_on_probation to true, probation_start_date is required
+    if (updateData.is_on_probation === false) {
+      // Removing from probation - clear the start date
+      updateData.probation_start_date = null
+    } else if (updateData.is_on_probation === true) {
+      // Adding to probation - start date is required
+      if (!updateData.probation_start_date && body.probation_start_date === undefined && body.probationStartDate === undefined) {
+        return NextResponse.json(
+          { error: "Probation start date is required when marking employee as on probation" },
+          { status: 400 }
+        )
+      }
+    }
+    
     updateData.updated_at = new Date().toISOString()
+
+    console.log(`Updating employee ${id} with data:`, updateData)
 
     const { data: employee, error } = await supabaseAdmin
       .from("users")
@@ -83,7 +112,35 @@ export async function PUT(
       .single()
 
     if (error) {
-      console.error("Error updating employee:", error)
+      console.error(`Error updating employee ${id}:`, {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+      })
+      // Check for specific error codes
+      if (error.code === '23505') {
+        // Unique constraint violation (e.g., email already exists)
+        return NextResponse.json(
+          { error: "Email or employee number already exists" },
+          { status: 409 }
+        )
+      }
+      if (error.code === '23514') {
+        // Check constraint violation
+        if (error.message.includes('probation_dates_check')) {
+          return NextResponse.json(
+            { error: "Probation start date is required when employee is on probation" },
+            { status: 400 }
+          )
+        }
+        if (error.message.includes('probation_period_positive')) {
+          return NextResponse.json(
+            { error: "Probation period must be a positive number" },
+            { status: 400 }
+          )
+        }
+      }
       return NextResponse.json({ error: "Failed to update employee" }, { status: 400 })
     }
 
