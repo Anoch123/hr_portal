@@ -238,6 +238,68 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// PATCH /api/attendance - Update a single attendance record
+export async function PATCH(request: NextRequest) {
+  try {
+    const { user } = await getCurrentUser()
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    // Check permission
+    const { data: userProfile } = await supabaseAdmin
+      .from("users")
+      .select("role")
+      .eq("id", user.id)
+      .single()
+
+    const isAdminOrHR = userProfile?.role === "ADMIN" || userProfile?.role === "HR_MANAGER"
+    
+    if (!isAdminOrHR) {
+      return NextResponse.json({ error: "You do not have permission to update attendance" }, { status: 403 })
+    }
+
+    const body = await request.json()
+    const { id, checkIn, checkOut, status, workingHours, overtimeHours, notes } = body
+
+    if (!id) {
+      return NextResponse.json({ error: "Attendance ID is required" }, { status: 400 })
+    }
+
+    // Build update object
+    const updateData: any = {
+      updated_at: new Date().toISOString()
+    }
+
+    if (checkIn !== undefined) updateData.check_in = checkIn
+    if (checkOut !== undefined) updateData.check_out = checkOut
+    if (status !== undefined) updateData.status = status
+    if (workingHours !== undefined) updateData.working_hours = workingHours
+    if (overtimeHours !== undefined) updateData.overtime_hours = overtimeHours
+    if (notes !== undefined) updateData.notes = notes
+
+    const { data: updatedRecord, error } = await supabaseAdmin
+      .from("attendance")
+      .update(updateData)
+      .eq("id", id)
+      .select()
+      .single()
+
+    if (error) {
+      console.error("Error updating attendance:", error)
+      return NextResponse.json({ error: "Failed to update attendance" }, { status: 500 })
+    }
+
+    return NextResponse.json({
+      message: "Attendance record updated successfully",
+      record: updatedRecord
+    })
+  } catch (error) {
+    console.error("Error in PATCH /api/attendance:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  }
+}
+
 // DELETE /api/attendance - Delete attendance record
 export async function DELETE(request: NextRequest) {
   try {

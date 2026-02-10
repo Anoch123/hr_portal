@@ -102,6 +102,8 @@ export async function POST(request: NextRequest) {
     // -------- MONTH / YEAR --------
     const { month, year } = parseMonthYear(rows)
 
+    // console.log(month , " - " , year);
+
     // -------- LOAD EMPLOYEES --------
     const { data: employees } = await supabaseAdmin
       .from("users")
@@ -232,6 +234,7 @@ export async function POST(request: NextRequest) {
           last_name: record.users.last_name,
           email: record.users.email,
           department: record.users.department,
+          date: record.date,
           days: {}
         }
       }
@@ -246,7 +249,7 @@ export async function POST(request: NextRequest) {
 
     
     const employeeAttendance = Object.values(attendanceByEmployee)
-    // console.log(employeeAttendance);
+    console.log(employeeAttendance);
 
     return NextResponse.json({
       message: "Attendance preview generated successfully",
