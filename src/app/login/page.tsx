@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef } from "react"
 import { signIn, useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
+import { Eye, EyeOff } from "lucide-react"
+
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -11,31 +13,30 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 export default function LoginPage() {
   const router = useRouter()
   const { data: session, status } = useSession()
+
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
+
   const hasRedirected = useRef(false)
 
-  // If already authenticated, show loading and let server redirect handle it
+  // Redirect if already logged in
   useEffect(() => {
     if (status === "authenticated" && session?.user?.id) {
       if (!hasRedirected.current) {
         hasRedirected.current = true
-        console.log("[LoginPage] User already authenticated, redirecting")
-        // Use window.location for a hard redirect instead of router.push
         window.location.href = "/dashboard"
       }
     }
   }, [status, session?.user?.id])
 
-  // If authenticated, show loading screen instead of form
+  // Loading screen while redirecting
   if (status === "authenticated" && session?.user?.id) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <p className="text-gray-600">Redirecting to dashboard...</p>
-        </div>
+        <p className="text-gray-600">Redirecting to dashboard...</p>
       </div>
     )
   }
@@ -57,7 +58,7 @@ export default function LoginPage() {
       } else if (result?.ok) {
         router.push("/dashboard")
       }
-    } catch (err) {
+    } catch {
       setError("An error occurred. Please try again.")
     } finally {
       setLoading(false)
@@ -65,9 +66,9 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4">
       <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
+        <CardHeader>
           <CardTitle className="text-2xl font-bold text-center">
             Leave Management System
           </CardTitle>
@@ -75,6 +76,7 @@ export default function LoginPage() {
             Enter your credentials to access your account
           </CardDescription>
         </CardHeader>
+
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
@@ -82,6 +84,8 @@ export default function LoginPage() {
                 {error}
               </div>
             )}
+
+            {/* Email */}
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -93,17 +97,33 @@ export default function LoginPage() {
                 required
               />
             </div>
+
+            {/* Password */}
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
+
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="pr-10"
+                />
+
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
+
+            {/* Submit */}
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Signing in..." : "Sign in"}
             </Button>

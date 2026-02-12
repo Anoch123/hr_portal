@@ -142,9 +142,15 @@ export async function POST(request: NextRequest) {
 
     // Allow current date and future dates (use local date comparison)
     const today = new Date()
-    const todayLocal = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+
+    const minSelectableDate = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate() - 2
+    )
     const startLocal = new Date(start.getFullYear(), start.getMonth(), start.getDate())
-    if (startLocal < todayLocal) {
+
+    if (startLocal < minSelectableDate) {
       return NextResponse.json(
         { error: "Cannot request leave for past dates" },
         { status: 400 }
@@ -336,9 +342,9 @@ export async function POST(request: NextRequest) {
     console.error("Error message:", error?.message)
     console.error("Error stack:", error?.stack)
     console.error("Full error:", JSON.stringify(error, null, 2))
-    
+
     const errorMessage = error?.message || error?.toString?.() || "Unknown error"
-    return NextResponse.json({ 
+    return NextResponse.json({
       error: "Internal server error",
       details: errorMessage,
       type: typeof error

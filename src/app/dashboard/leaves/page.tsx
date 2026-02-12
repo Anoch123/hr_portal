@@ -68,9 +68,20 @@ export default function LeavesPage() {
   const [startDate, setStartDate] = useState<Date | undefined>()
   const [endDate, setEndDate] = useState<Date | undefined>()
   const [leaveMode, setLeaveMode] = useState<'FULL' | 'HALF' | 'SHORT'>('FULL')
-  const [reason, setReason] = useState("")
+  const [reason, setReason] = useState<'Exam Leave'| 'Study Leave'| 'Religious Holiday'| 'Sick Leave'| 'Medical Appointment'| 'Hospitalization'| 'Funeral'| 'Personal Leave'>('Personal Leave')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState("")
+
+  const formatLocalDate = (date: Date) => {
+    return date.toLocaleDateString("en-CA") // YYYY-MM-DD
+  }
+
+  const getMinSelectableDate = () => {
+    const date = new Date()
+    date.setHours(0, 0, 0, 0) // normalize to midnight
+    date.setDate(date.getDate() - 2) // allow 2 days back
+    return date
+  }
 
   useEffect(() => {
     fetchRequests()
@@ -135,8 +146,8 @@ export default function LeavesPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           leaveTypeId,
-          startDate: startDate.toISOString(),
-          endDate: endDate.toISOString(),
+          startDate: formatLocalDate(startDate),
+          endDate: formatLocalDate(endDate),
           leaveMode,
           reason,
         }),
@@ -190,7 +201,7 @@ export default function LeavesPage() {
     setStartDate(undefined)
     setEndDate(undefined)
     setLeaveMode('FULL')
-    setReason("")
+    setReason('Personal Leave')
     setError("")
   }
 
@@ -274,6 +285,7 @@ export default function LeavesPage() {
                     date={startDate}
                     onDateChange={setStartDate}
                     placeholder="Select start date"
+                    minDate={getMinSelectableDate()}
                   />
                 </div>
                 <div className="space-y-2">
@@ -282,16 +294,27 @@ export default function LeavesPage() {
                     date={endDate}
                     onDateChange={setEndDate}
                     placeholder="Select end date"
+                    minDate={getMinSelectableDate()}
                   />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>Reason (Optional)</Label>
-                <Textarea
-                  value={reason}
-                  onChange={(e) => setReason(e.target.value)}
-                  placeholder="Enter reason for leave"
-                />
+                <Label>Reason *</Label>
+                <Select value={reason} onValueChange={(value: 'Exam Leave'| 'Study Leave'| 'Religious Holiday'| 'Sick Leave'| 'Medical Appointment'| 'Hospitalization'| 'Funeral'| 'Personal Leave') => setReason(value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select leave mode" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Personal Leave">Personal Leave</SelectItem>
+                    <SelectItem value="Exam Leave">Exam Leave</SelectItem>
+                    <SelectItem value="Study Leave">Study Leave</SelectItem>
+                    <SelectItem value="Religious Holiday">Religious Holiday</SelectItem>
+                    <SelectItem value="Sick Leave">Sick Leave</SelectItem>
+                    <SelectItem value="Medical Appointment">Medical Appointment</SelectItem>
+                    <SelectItem value="Hospitalization">Hospitalization</SelectItem>
+                    <SelectItem value="Funeral">Funeral</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <DialogFooter>
@@ -423,3 +446,4 @@ export default function LeavesPage() {
     </div>
   )
 }
+
