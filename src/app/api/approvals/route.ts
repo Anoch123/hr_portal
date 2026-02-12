@@ -36,6 +36,8 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get("page") || "1")
     const limit = parseInt(searchParams.get("limit") || "10")
     const offset = (page - 1) * limit
+    const status = searchParams.get("status") || "PENDING"
+    const search = searchParams.get("search") || ""
 
     let query = supabaseAdmin
       .from("leave_requests")
@@ -47,7 +49,12 @@ export async function GET(request: NextRequest) {
         `,
         { count: "exact" }
       )
-      .eq("status", "PENDING")
+      .eq("status", status)
+
+    // Add search functionality
+    if (search) {
+      query = query.or(`user.first_name.ilike.%${search}%,user.last_name.ilike.%${search}%,user.email.ilike.%${search}%`)
+    }
 
     // Managers can only see their direct reports' requests
     // HR_MANAGER and ADMIN can see all pending requests

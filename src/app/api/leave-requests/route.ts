@@ -140,10 +140,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Allow current date and future dates
+    // Allow current date and future dates (use local date comparison)
     const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    if (start < today) {
+    const todayLocal = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+    const startLocal = new Date(start.getFullYear(), start.getMonth(), start.getDate())
+    if (startLocal < todayLocal) {
       return NextResponse.json(
         { error: "Cannot request leave for past dates" },
         { status: 400 }
