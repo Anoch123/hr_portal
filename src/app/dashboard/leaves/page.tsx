@@ -33,7 +33,8 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { DatePicker } from "@/components/ui/date-picker"
 import { formatDate, getStatusColor } from "@/lib/utils"
-import { Plus, X } from "lucide-react"
+import { Plus, X, Eye } from "lucide-react"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 interface LeaveType {
   id: string
@@ -50,6 +51,7 @@ interface LeaveRequest {
   status: string
   leave_mode: 'FULL' | 'HALF' | 'SHORT'
   created_at: string
+  rejection_reason: string | null
   leaveType: LeaveType
 }
 
@@ -60,8 +62,11 @@ export default function LeavesPage() {
   const [loading, setLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false)
   const [selectedRequest, setSelectedRequest] = useState<LeaveRequest | null>(null)
   const [isOnProbation, setIsOnProbation] = useState(false)
+  const [hasCarriedOverLeave, setHasCarriedOverLeave] = useState(false)
+  const [activeTab, setActiveTab] = useState("pending")
 
   // Form state
   const [leaveTypeId, setLeaveTypeId] = useState("")
@@ -84,9 +89,12 @@ export default function LeavesPage() {
   }
 
   useEffect(() => {
-    fetchRequests()
-    fetchLeaveTypes()
-    checkProbationStatus()
+    const init = async () => {
+      await fetchRequests()
+      await fetchLeaveTypes()
+      await checkProbationStatus()
+    }
+    init()
   }, [])
 
   const fetchRequests = async () => {
@@ -95,8 +103,10 @@ export default function LeavesPage() {
       const data = await res.json()
       console.log(data);
       setRequests(data.requests || [])
+      return data.requests || []
     } catch (err) {
       console.error("Error fetching requests:", err)
+      return []
     } finally {
       setLoading(false)
     }
@@ -116,20 +126,39 @@ export default function LeavesPage() {
     try {
       const res = await fetch("/api/auth/profile")
       const profile = await res.json()
-      if (profile.is_on_probation) {
-        // Check if still on probation
-        const startDate = new Date(profile.probation_start_date)
-        const endDate = new Date(startDate)
-        endDate.setMonth(endDate.getMonth() + profile.probation_period_months)
-        const now = new Date()
-        setIsOnProbation(now >= startDate && now <= endDate)
-        if (now >= startDate && now <= endDate) {
-          setLeaveMode('HALF') // Set default to HALF for probationary employees
+      const onProbation = profile.user.is_on_probation || false
+      setIsOnProbation(onProbation)
+
+      if (onProbation) {
+        // Check leave_balances for carried over leave from previous months
+        const currentYear = new Date().getFullYear()
+        const balancesRes = await fetch(`/api/leave-balances?year=${currentYear}`)
+        const balances = await balancesRes.json()
+
+        // Check if there's any carried over leave balance
+        const hasCarriedOver = balances.some((balance: { carried_over: number }) => balance.carried_over > 0)
+        setHasCarriedOverLeave(hasCarriedOver)
+
+        // Set default leave mode based on probation and carried over status
+        if (hasCarriedOver) {
+          setLeaveMode('FULL') // Allow full day if they have carried over leave
+        } else {
+          setLeaveMode('HALF') // Only half day if no carried over leave
         }
       }
     } catch (err) {
       console.error("Error checking probation status:", err)
     }
+  }
+
+  // Filter requests based on active tab
+  const getFilteredRequests = () => {
+    return requests.filter(r => r.status === activeTab.toUpperCase())
+  }
+
+  // Get count for each status
+  const getStatusCount = (status: string) => {
+    return requests.filter(r => r.status === status.toUpperCase()).length
   }
 
   const handleSubmit = async () => {
@@ -205,25 +234,190 @@ export default function LeavesPage() {
     setError("")
   }
 
+  const renderTable = (filteredRequests: LeaveRequest[]) => (
+    <>
+      {loading ? (
+        <p className="text-center py-4">Loading...</p>
+      ) : filteredRequests.length === 0 ? (
+        <p className="text-center py-4 text-muted-foreground">
+          No leave requests found in this category.
+        </p>
+      ) : (
+        <div className="overflow-x-auto -mx-4 md:mx-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="min-w-[120px]">Leave Type</TableHead>
+                <TableHead className="min-w-[100px]">Mode</TableHead>
+                <TableHead className="min-w-[100px]">Start Date</TableHead>
+                <TableHead className="min-w-[100px]">End Date</TableHead>
+                <TableHead className="min-w-[60px]">Days</TableHead>
+                <TableHead className="min-w-[100px]">Status</TableHead>
+                <TableHead className="min-w-[100px]">Submitted</TableHead>
+                <TableHead className="min-w-[150px]">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredRequests.map((request) => (
+                <TableRow key={request.id}>
+                  <TableCell className="font-medium">
+                    {request.leaveType?.name || 'Unknown'}
+                  </TableCell>
+                  <TableCell>
+                    {request.leave_mode === 'FULL' ? 'Full Day' :
+                      request.leave_mode === 'HALF' ? 'Half Day' :
+                        request.leave_mode === 'SHORT' ? 'Short Leave' : request.leave_mode}
+                  </TableCell>
+                  <TableCell>{formatDate(request.start_date)}</TableCell>
+                  <TableCell>{formatDate(request.end_date)}</TableCell>
+                  <TableCell>{request.total_days}</TableCell>
+                  <TableCell>
+                    <Badge className={request.status}>
+                      {request.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>{formatDate(request.created_at)}</TableCell>
+                  <TableCell>
+                    <div className="flex gap-2 flex-wrap">
+                      {request.status === "REJECTED" && request.rejection_reason && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedRequest(request)
+                            setDetailsDialogOpen(true)
+                          }}
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          View Details
+                        </Button>
+                      )}
+                      {["PENDING", "APPROVED"].includes(request.status) && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedRequest(request)
+                            setCancelDialogOpen(true)
+                          }}
+                        >
+                          <X className="h-4 w-4 mr-1" />
+                          Cancel
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+    </>
+  )
+
+  // Mobile card view for leave requests
+  const renderMobileCards = (filteredRequests: LeaveRequest[]) => (
+    <>
+      {loading ? (
+        <p className="text-center py-4">Loading...</p>
+      ) : filteredRequests.length === 0 ? (
+        <p className="text-center py-4 text-muted-foreground">
+          No leave requests found in this category.
+        </p>
+      ) : (
+        <div className="space-y-4 md:hidden">
+          {filteredRequests.map((request) => (
+            <Card key={request.id} className="overflow-hidden">
+              <CardContent className="p-4">
+                <div className="flex justify-between items-start mb-3">
+                  <div>
+                    <h3 className="font-medium">{request.leaveType?.name || 'Unknown'}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {request.leave_mode === 'FULL' ? 'Full Day' :
+                        request.leave_mode === 'HALF' ? 'Half Day' :
+                          request.leave_mode === 'SHORT' ? 'Short Leave' : request.leave_mode}
+                    </p>
+                  </div>
+                  <Badge className={request.status}>
+                    {request.status}
+                  </Badge>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-sm mb-3">
+                  <div>
+                    <span className="text-muted-foreground">Start:</span>{" "}
+                    {formatDate(request.start_date)}
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">End:</span>{" "}
+                    {formatDate(request.end_date)}
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Days:</span>{" "}
+                    {request.total_days}
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Submitted:</span>{" "}
+                    {formatDate(request.created_at)}
+                  </div>
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  {request.status === "REJECTED" && request.rejection_reason && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => {
+                        setSelectedRequest(request)
+                        setDetailsDialogOpen(true)
+                      }}
+                    >
+                      <Eye className="h-4 w-4 mr-1" />
+                      View Details
+                    </Button>
+                  )}
+                  {["PENDING", "APPROVED"].includes(request.status) && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => {
+                        setSelectedRequest(request)
+                        setCancelDialogOpen(true)
+                      }}
+                    >
+                      <X className="h-4 w-4 mr-1" />
+                      Cancel
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </>
+  )
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">My Leaves</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold">My Leaves</h1>
+          <p className="text-muted-foreground text-sm sm:text-base">
             View and manage your leave requests
           </p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="w-full sm:w-auto">
               <Plus className="h-4 w-4 mr-2" />
               Request Leave
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-md mx-4">
             <DialogHeader>
-              <DialogTitle>Request Leave</DialogTitle>
+              <DialogTitle>Request Leave {isOnProbation}</DialogTitle>
               <DialogDescription>
                 Submit a new leave request for approval
               </DialogDescription>
@@ -241,11 +435,17 @@ export default function LeavesPage() {
                     <SelectValue placeholder="Select leave type" />
                   </SelectTrigger>
                   <SelectContent>
-                    {leaveTypes.map((type) => (
-                      <SelectItem key={type.id} value={type.id}>
-                        {type.name}
-                      </SelectItem>
-                    ))}
+                    {leaveTypes
+                      .filter((type) =>
+                        isOnProbation
+                          ? type.name.toLowerCase().includes("probation")
+                          : true
+                      )
+                      .map((type) => (
+                        <SelectItem key={type.id} value={type.id}>
+                          {type.name}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -253,17 +453,36 @@ export default function LeavesPage() {
                 <Label>Leave Mode *</Label>
                 {isOnProbation ? (
                   <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-                    <p className="text-sm text-yellow-800">
-                      You are currently on probation. Only half-day leave is allowed.
-                    </p>
-                    <Select value={leaveMode} onValueChange={(value: 'FULL' | 'HALF' | 'SHORT') => setLeaveMode(value)}>
-                      <SelectTrigger className="mt-2">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="HALF">Half Day</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    {hasCarriedOverLeave ? (
+                      <>
+                        <p className="text-sm text-yellow-800">
+                          You are on probation but have unused leaves from previous months. Full day leave is allowed.
+                        </p>
+                        <Select value={leaveMode} onValueChange={(value: 'FULL' | 'HALF' | 'SHORT') => setLeaveMode(value)}>
+                          <SelectTrigger className="mt-2">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="FULL">Full Day</SelectItem>
+                            <SelectItem value="HALF">Half Day</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-sm text-yellow-800">
+                          You are currently on probation with no unused leaves from previous months. Only half-day leave is allowed.
+                        </p>
+                        <Select value={leaveMode} onValueChange={(value: 'FULL' | 'HALF' | 'SHORT') => setLeaveMode(value)}>
+                          <SelectTrigger className="mt-2">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="HALF">Half Day</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </>
+                    )}
                   </div>
                 ) : (
                   <Select value={leaveMode} onValueChange={(value: 'FULL' | 'HALF' | 'SHORT') => setLeaveMode(value)}>
@@ -278,7 +497,7 @@ export default function LeavesPage() {
                   </Select>
                 )}
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Start Date *</Label>
                   <DatePicker
@@ -317,11 +536,11 @@ export default function LeavesPage() {
                 </Select>
               </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setDialogOpen(false)}>
+            <DialogFooter className="flex-col sm:flex-row gap-2">
+              <Button variant="outline" onClick={() => setDialogOpen(false)} className="w-full sm:w-auto">
                 Cancel
               </Button>
-              <Button onClick={handleSubmit} disabled={submitting}>
+              <Button onClick={handleSubmit} disabled={submitting} className="w-full sm:w-auto">
                 {submitting ? "Submitting..." : "Submit Request"}
               </Button>
             </DialogFooter>
@@ -329,78 +548,70 @@ export default function LeavesPage() {
         </Dialog>
       </div>
 
-      <Card>
-        {/* <CardHeader>
-          <CardTitle>Leave Requests</CardTitle>
-          <CardDescription>Your leave request history</CardDescription>
-        </CardHeader> */}
-        <CardContent>
-          {loading ? (
-            <p className="text-center py-4">Loading...</p>
-          ) : requests.length === 0 ? (
-            <p className="text-center py-4 text-muted-foreground">
-              No leave requests found. Click &quot;Request Leave&quot; to submit your first request.
-            </p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Leave Type</TableHead>
-                  <TableHead>Mode</TableHead>
-                  <TableHead>Start Date</TableHead>
-                  <TableHead>End Date</TableHead>
-                  <TableHead>Days</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Submitted</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {requests.map((request) => (
-                  <TableRow key={request.id}>
-                    <TableCell className="font-medium">
-                      {request.leaveType?.name || 'Unknown'}
-                    </TableCell>
-                    <TableCell>
-                      {request.leave_mode === 'FULL' ? 'Full Day' :
-                        request.leave_mode === 'HALF' ? 'Half Day' :
-                          request.leave_mode === 'SHORT' ? 'Short Leave' : request.leave_mode}
-                    </TableCell>
-                    <TableCell>{formatDate(request.start_date)}</TableCell>
-                    <TableCell>{formatDate(request.end_date)}</TableCell>
-                    <TableCell>{request.total_days}</TableCell>
-                    <TableCell>
-                      <Badge className={request.status}>
-                        {request.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{formatDate(request.created_at)}</TableCell>
-                    <TableCell>
-                      {["PENDING", "APPROVED"].includes(request.status) && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedRequest(request)
-                            setCancelDialogOpen(true)
-                          }}
-                        >
-                          <X className="h-4 w-4 mr-1" />
-                          Cancel
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="flex flex-wrap h-auto gap-1 bg-muted p-1 rounded-md w-full sm:w-auto">
+          <TabsTrigger value="pending" className="flex-1 sm:flex-none text-xs sm:text-sm">
+            Pending ({getStatusCount("pending")})
+          </TabsTrigger>
+          <TabsTrigger value="approved" className="flex-1 sm:flex-none text-xs sm:text-sm">
+            Approved ({getStatusCount("approved")})
+          </TabsTrigger>
+          <TabsTrigger value="rejected" className="flex-1 sm:flex-none text-xs sm:text-sm">
+            Rejected ({getStatusCount("rejected")})
+          </TabsTrigger>
+          <TabsTrigger value="cancelled" className="flex-1 sm:flex-none text-xs sm:text-sm">
+            Cancelled ({getStatusCount("cancelled")})
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="pending">
+          <Card>
+            <CardContent className="p-4">
+              {renderMobileCards(getFilteredRequests())}
+              <div className="hidden md:block">
+                {renderTable(getFilteredRequests())}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="approved">
+          <Card>
+            <CardContent className="p-4">
+              {renderMobileCards(getFilteredRequests())}
+              <div className="hidden md:block">
+                {renderTable(getFilteredRequests())}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="rejected">
+          <Card>
+            <CardContent className="p-4">
+              {renderMobileCards(getFilteredRequests())}
+              <div className="hidden md:block">
+                {renderTable(getFilteredRequests())}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="cancelled">
+          <Card>
+            <CardContent className="p-4">
+              {renderMobileCards(getFilteredRequests())}
+              <div className="hidden md:block">
+                {renderTable(getFilteredRequests())}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* Cancel Dialog */}
       <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md mx-4">
           <DialogHeader>
             <DialogTitle>Cancel Leave Request</DialogTitle>
             <DialogDescription>
@@ -408,7 +619,7 @@ export default function LeavesPage() {
             </DialogDescription>
           </DialogHeader>
           {selectedRequest && (
-            <div className="py-4">
+            <div className="py-4 space-y-2">
               <p>
                 <strong>Leave Type:</strong> {selectedRequest.leaveType.name}
               </p>
@@ -421,10 +632,11 @@ export default function LeavesPage() {
               </p>
             </div>
           )}
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button
               variant="outline"
               onClick={() => setCancelDialogOpen(false)}
+              className="w-full sm:w-auto"
             >
               Keep Request
             </Button>
@@ -432,6 +644,7 @@ export default function LeavesPage() {
               variant="destructive"
               onClick={handleCancel}
               disabled={submitting}
+              className="w-full sm:w-auto"
             >
               {submitting ? "Cancelling..." : "Cancel Request"}
             </Button>
@@ -443,7 +656,49 @@ export default function LeavesPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Rejection Details Dialog */}
+      <Dialog open={detailsDialogOpen} onOpenChange={setDetailsDialogOpen}>
+        <DialogContent className="max-w-md mx-4">
+          <DialogHeader>
+            <DialogTitle>Leave Request Details</DialogTitle>
+            <DialogDescription>
+              Your leave request was rejected
+            </DialogDescription>
+          </DialogHeader>
+          {selectedRequest && (
+            <div className="py-4 space-y-3">
+              <p>
+                <strong>Leave Type:</strong> {selectedRequest.leaveType?.name || 'Unknown'}
+              </p>
+              <p>
+                <strong>Dates:</strong> {formatDate(selectedRequest.start_date)} -{" "}
+                {formatDate(selectedRequest.end_date)}
+              </p>
+              <p>
+                <strong>Days:</strong> {selectedRequest.total_days}
+              </p>
+              <p>
+                <strong>Mode:</strong>{" "}
+                {selectedRequest.leave_mode === 'FULL' ? 'Full Day' :
+                  selectedRequest.leave_mode === 'HALF' ? 'Half Day' :
+                    selectedRequest.leave_mode === 'SHORT' ? 'Short Leave' : selectedRequest.leave_mode}
+              </p>
+              <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
+                <p className="text-sm font-medium text-red-800">Rejection Reason:</p>
+                <p className="text-sm text-red-700 mt-1">
+                  {selectedRequest.rejection_reason || "No reason provided"}
+                </p>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button onClick={() => setDetailsDialogOpen(false)} className="w-full sm:w-auto">
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
-
