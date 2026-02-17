@@ -4,6 +4,9 @@ import { supabaseAdmin } from "@/lib/supabase-admin"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth-config"
 
+// Force dynamic rendering since this route uses session/auth
+export const dynamic = 'force-dynamic'
+
 // GET /api/approvals - Get pending approvals for current user
 export async function GET(request: NextRequest) {
   try {

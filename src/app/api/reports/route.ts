@@ -4,6 +4,9 @@ import { authOptions } from '@/lib/auth-config'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { hasPermission } from '@/lib/auth'
 
+// Force dynamic rendering since this route uses session/auth
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
