@@ -34,9 +34,16 @@ export async function middleware(request: NextRequest) {
 
       const data = await response.json()
       isInitialized = data.initialized
+      
+      // Log any errors from the db-status endpoint
+      if (data.error) {
+        console.error('[Middleware] DB status error:', data.error, data.details || '')
+      }
+      
       dbStatusCache = { initialized: isInitialized, timestamp: now }
     } catch (error) {
       // If we can't check, assume not initialized (safer)
+      console.error('[Middleware] Failed to check DB status:', error)
       isInitialized = false
     }
   } else {
