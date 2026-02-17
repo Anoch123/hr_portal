@@ -91,25 +91,7 @@ export async function POST(
       throw updateError
     }
 
-    // Restore pending days to balance
-    const currentYear = new Date().getFullYear()
-    
-    const { data: balance } = await supabaseAdmin
-      .from("leave_balances")
-      .select("*")
-      .eq("user_id", leaveRequest.user_id)
-      .eq("leave_type_id", leaveRequest.leave_type_id)
-      .eq("year", currentYear)
-      .single()
-
-    if (balance) {
-      await supabaseAdmin
-        .from("leave_balances")
-        .update({
-          pending_days: (balance.pending_days || 0) - leaveRequest.total_days,
-        })
-        .eq("id", balance.id)
-    }
+    // Note: No balance update needed on rejection since balance is only updated on approval
 
     // Create history entry
     await supabaseAdmin.from("leave_history").insert({

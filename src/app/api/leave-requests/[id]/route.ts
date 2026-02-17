@@ -93,25 +93,7 @@ export async function DELETE(
       )
     }
 
-    // Restore pending days to balance
-    const currentYear = new Date().getFullYear()
-    
-    const { data: balance } = await supabaseAdmin
-      .from("leave_balances")
-      .select("*")
-      .eq("user_id", leaveRequest.user_id)
-      .eq("leave_type_id", leaveRequest.leave_type_id)
-      .eq("year", currentYear)
-      .single()
-
-    if (balance) {
-      await supabaseAdmin
-        .from("leave_balances")
-        .update({
-          pending_days: (balance.pending_days || 0) - leaveRequest.total_days,
-        })
-        .eq("id", balance.id)
-    }
+    // Note: No balance update needed on deletion since balance is only updated on approval
 
     // Delete the request
     const { error: deleteError } = await supabaseAdmin

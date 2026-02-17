@@ -46,7 +46,6 @@ interface LeaveBalance {
   year: number
   total_days: number
   used_days: number
-  pending_days: number
   carried_over: number
   leaveType: {
     id: string
@@ -595,7 +594,7 @@ export default function EmployeesPage() {
               <TableCell className="text-sm">
                 {(() => {
                   const balances = employeeBalancesMap[employee.id] || []
-                  const totalAvailable = balances.reduce((sum, b) => sum + (b.total_days + b.carried_over - b.used_days - b.pending_days), 0)
+                  const totalAvailable = balances.reduce((sum, b) => sum + (b.total_days + b.carried_over - b.used_days), 0)
                   return totalAvailable > 0 ? totalAvailable.toFixed(1) : "-"
                 })()}
               </TableCell>
@@ -1280,7 +1279,7 @@ export default function EmployeesPage() {
                         <div className="flex-1">
                           <div className="font-medium">{balance.leaveType.name}</div>
                           <div className="text-sm text-muted-foreground">
-                            Total: {balance.total_days} days | Carried Over: {balance.carried_over} days | Used: {balance.used_days} days | Available: {(balance.total_days + balance.carried_over - balance.used_days - balance.pending_days).toFixed(1)} days
+                            Total: {balance.total_days} days | Carried Over: {balance.carried_over} days | Used: {balance.used_days} days | Available: {(balance.total_days + balance.carried_over - balance.used_days).toFixed(1)} days
                           </div>
                         </div>
                         <Button

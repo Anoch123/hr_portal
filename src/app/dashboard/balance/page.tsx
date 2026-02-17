@@ -9,7 +9,6 @@ interface LeaveBalance {
   year: number
   total_days: number
   used_days: number
-  pending_days: number
   carried_over: number
   leaveType: {
     id: string
@@ -98,12 +97,10 @@ export default function BalancePage() {
             // Ensure all values are numbers to avoid NaN
             const totalDays = Number(balance.total_days) || 0
             const usedDays = Number(balance.used_days) || 0
-            const pendingDays = Number(balance.pending_days) || 0
             const carriedOver = Number(balance.carried_over) || 0
 
-            const available = totalDays - usedDays - pendingDays
+            const available = totalDays - usedDays
             const usedPercentage = calculatePercentage(usedDays, totalDays)
-            const pendingPercentage = calculatePercentage(pendingDays, totalDays)
 
             return (
               <Card key={balance.id}>
@@ -128,9 +125,9 @@ export default function BalancePage() {
                     <p className="text-sm text-muted-foreground">Days Available</p>
                   </div>
 
-                  <ProgressBar value={usedPercentage + pendingPercentage} />
+                  <ProgressBar value={usedPercentage} />
 
-                  <div className="grid grid-cols-3 gap-2 text-center text-sm">
+                  <div className="grid grid-cols-2 gap-2 text-center text-sm">
                     <div>
                       <p className="font-semibold">{String(totalDays)}</p>
                       <p className="text-muted-foreground">Total</p>
@@ -138,10 +135,6 @@ export default function BalancePage() {
                     <div>
                       <p className="font-semibold text-orange-600">{String(usedDays)}</p>
                       <p className="text-muted-foreground">Used</p>
-                    </div>
-                    <div>
-                      <p className="font-semibold text-yellow-600">{String(pendingDays)}</p>
-                      <p className="text-muted-foreground">Pending</p>
                     </div>
                   </div>
 
@@ -165,7 +158,7 @@ export default function BalancePage() {
             <CardDescription>Overview of all your leave balances</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div className="text-center p-4 bg-blue-50 rounded-lg">
                 <p className="text-2xl font-bold text-blue-600">
                   {String(balances.reduce((sum, b) => sum + (Number(b.total_days) || 0), 0))}
@@ -175,7 +168,7 @@ export default function BalancePage() {
               <div className="text-center p-4 bg-green-50 rounded-lg">
                 <p className="text-2xl font-bold text-green-600">
                   {String(balances.reduce(
-                    (sum, b) => sum + (Number(b.total_days) || 0 - Number(b.used_days) || 0 - Number(b.pending_days) || 0),
+                    (sum, b) => sum + ((Number(b.total_days) || 0) - (Number(b.used_days) || 0)),
                     0
                   ))}
                 </p>
@@ -186,12 +179,6 @@ export default function BalancePage() {
                   {String(balances.reduce((sum, b) => sum + (Number(b.used_days) || 0), 0))}
                 </p>
                 <p className="text-sm text-orange-700">Used</p>
-              </div>
-              <div className="text-center p-4 bg-yellow-50 rounded-lg">
-                <p className="text-2xl font-bold text-yellow-600">
-                  {String(balances.reduce((sum, b) => sum + (Number(b.pending_days) || 0), 0))}
-                </p>
-                <p className="text-sm text-yellow-700">Pending</p>
               </div>
             </div>
           </CardContent>

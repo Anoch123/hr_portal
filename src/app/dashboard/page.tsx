@@ -272,7 +272,7 @@ export default async function DashboardPage() {
                     </div>
                     <div className="text-right">
                       <p className="text-2xl font-bold text-primary">
-                        {balance.total_days - (balance.used_days || 0) - (balance.pending_days || 0)}
+                        {balance.total_days - (balance.used_days || 0)}
                       </p>
                       <p className="text-xs text-muted-foreground">Available</p>
                     </div>

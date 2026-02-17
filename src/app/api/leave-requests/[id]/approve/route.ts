@@ -92,7 +92,7 @@ export async function POST(
       throw updateError
     }
 
-    // Update leave balance - move from pending to used
+    // Update leave balance - add to used_days (balance is now updated only on approval)
     const currentYear = new Date().getFullYear()
     
     const { data: balance } = await supabaseAdmin
@@ -107,8 +107,8 @@ export async function POST(
       await supabaseAdmin
         .from("leave_balances")
         .update({
-          pending_days: (balance.pending_days || 0) - leaveRequest.total_days,
           used_days: (balance.used_days || 0) + leaveRequest.total_days,
+          updated_at: new Date().toISOString(),
         })
         .eq("id", balance.id)
     }

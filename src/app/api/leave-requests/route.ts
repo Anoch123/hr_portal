@@ -217,7 +217,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const availableDays = balance.total_days - balance.used_days - balance.pending_days
+    // Available days = total_days - used_days (pending_days no longer used since balance updates only on approval)
+    const availableDays = balance.total_days - balance.used_days
     if (totalDays > availableDays) {
       return NextResponse.json(
         { error: `Insufficient leave balance. Available: ${availableDays} days` },
@@ -254,16 +255,8 @@ export async function POST(request: NextRequest) {
 
     if (createError) throw createError
 
-    // Update pending days in balance
-    await supabaseAdmin
-      .from('leave_balances')
-      .update({
-        pending_days: balance.pending_days + totalDays,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('user_id', userId)
-      .eq('leave_type_id', leaveTypeId)
-      .eq('year', currentYear)
+    // Note: Leave balance is now updated only after approval, not at request creation
+    // This ensures balance reflects only approved leave, not pending requests
 
     // Get user profile for email (optional - don't fail if this fails)
     let userProfile: any = null

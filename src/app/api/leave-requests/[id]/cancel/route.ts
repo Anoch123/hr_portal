@@ -72,33 +72,29 @@ export async function POST(
       throw updateError
     }
 
-    // Update leave balance
-    const currentYear = new Date().getFullYear()
+    // Update leave balance - only if request was APPROVED (balance is updated only on approval)
+    if (previousStatus === "APPROVED") {
+      const currentYear = new Date().getFullYear()
 
-    const { data: balance } = await supabaseAdmin
-      .from("leave_balances")
-      .select("*")
-      .eq("user_id", leaveRequest.user_id)
-      .eq("leave_type_id", leaveRequest.leave_type_id)
-      .eq("year", currentYear)
-      .single()
-
-    if (balance) {
-      const updateData: any = {}
-
-      if (previousStatus === "PENDING") {
-        // Restore pending days
-        updateData.pending_days = (balance.pending_days || 0) - leaveRequest.total_days
-      } else if (previousStatus === "APPROVED") {
-        // Restore used days
-        updateData.used_days = (balance.used_days || 0) - leaveRequest.total_days
-      }
-
-      await supabaseAdmin
+      const { data: balance } = await supabaseAdmin
         .from("leave_balances")
-        .update(updateData)
-        .eq("id", balance.id)
+        .select("*")
+        .eq("user_id", leaveRequest.user_id)
+        .eq("leave_type_id", leaveRequest.leave_type_id)
+        .eq("year", currentYear)
+        .single()
+
+      if (balance) {
+        await supabaseAdmin
+          .from("leave_balances")
+          .update({
+            used_days: (balance.used_days || 0) - leaveRequest.total_days,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", balance.id)
+      }
     }
+    // Note: No balance update needed for PENDING status since balance is only updated on approval
 
     // Create history entry
     await supabaseAdmin.from("leave_history").insert({
