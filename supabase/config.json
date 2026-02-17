@@ -1,0 +1,10 @@
+{
+  "version": "1.0.0",
+  "project_id": "jdvbjkidxvpysmcnbreb",
+  "region": "us-east-1",
+  "database": {
+    "migrations": {
+      "dir": "./migrations"
+    }
+  }
+}
