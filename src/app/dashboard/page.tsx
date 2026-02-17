@@ -170,7 +170,7 @@ export default async function DashboardPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">
-          Welcome back123, {firstName}!
+          Welcome back, {firstName}!
         </h1>
         <p className="text-muted-foreground">
           Here&apos;s an overview of your leave status
