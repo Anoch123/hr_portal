@@ -623,7 +623,7 @@ export default function LeavesPage() {
               </div>
               
               {/* Half Day Time Selection */}
-              {leaveMode === 'HALF' && (
+              {/* {leaveMode === 'HALF' && (
                 <div className="space-y-4 p-4 border rounded-md bg-slate-50">
                   <div className="text-sm font-medium text-slate-700">Half Day Time Range * (Max 2 hours)</div>
                   <div className="grid grid-cols-2 gap-4">
@@ -650,7 +650,7 @@ export default function LeavesPage() {
                     Select the time range for your half day leave. Maximum duration is 2 hours (e.g., 08:30 - 10:30).
                   </p>
                 </div>
-              )}
+              )} */}
               
               {/* Short Leave Time Selection */}
               {leaveMode === 'SHORT' && (
