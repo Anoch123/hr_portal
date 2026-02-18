@@ -13,6 +13,7 @@ export default function SettingsPage() {
   const { data: session } = useSession()
   const { theme, setTheme } = useTheme()
   const [passwordData, setPasswordData] = useState({
+    currentPassword: "",
     newPassword: "",
     confirmPassword: "",
   })
@@ -23,6 +24,12 @@ export default function SettingsPage() {
     e.preventDefault()
     setIsLoading(true)
     setMessage("")
+
+    if (!passwordData.currentPassword) {
+      setMessage("Current password is required")
+      setIsLoading(false)
+      return
+    }
 
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       setMessage("New passwords do not match")
@@ -43,6 +50,7 @@ export default function SettingsPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          currentPassword: passwordData.currentPassword,
           newPassword: passwordData.newPassword,
         }),
       })
@@ -52,6 +60,7 @@ export default function SettingsPage() {
       if (response.ok) {
         setMessage("Password updated successfully")
         setPasswordData({
+          currentPassword: "",
           newPassword: "",
           confirmPassword: "",
         })
@@ -87,6 +96,18 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handlePasswordUpdate} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="currentPassword">Current Password</Label>
+              <Input
+                id="currentPassword"
+                type="password"
+                value={passwordData.currentPassword}
+                onChange={(e) =>
+                  setPasswordData({ ...passwordData, currentPassword: e.target.value })
+                }
+                required
+              />
+            </div>
             <div className="space-y-2">
               <Label htmlFor="newPassword">New Password</Label>
               <Input

@@ -191,6 +191,23 @@ export async function updatePassword(userId: string, newPassword: string) {
   }
 }
 
+export async function verifyCurrentPassword(email: string, password: string) {
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+
+    if (error) {
+      return { isValid: false, error }
+    }
+
+    return { isValid: true, error: null }
+  } catch (error) {
+    return { isValid: false, error }
+  }
+}
+
 export async function hasPermission(userId: string, required: string): Promise<{hasPermission: boolean, error: any}> {
   try {
     const { data: user, error } = await supabaseAdmin
