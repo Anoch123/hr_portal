@@ -121,40 +121,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validate time selection for HALF day (max 2 hours)
-    if (leaveMode === 'HALF') {
-      if (!startTime || !endTime) {
-        return NextResponse.json(
-          { error: "Start time and end time are required for half day leave" },
-          { status: 400 }
-        )
-      }
-      // Validate time format (HH:MM)
-      const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/
-      if (!timeRegex.test(startTime) || !timeRegex.test(endTime)) {
-        return NextResponse.json(
-          { error: "Invalid time format. Use HH:MM format (e.g., 09:00)" },
-          { status: 400 }
-        )
-      }
-      if (startTime >= endTime) {
-        return NextResponse.json(
-          { error: "Start time must be before end time" },
-          { status: 400 }
-        )
-      }
-      // Validate maximum 2 hours for half day leave
-      const [startH, startM] = startTime.split(':').map(Number)
-      const [endH, endM] = endTime.split(':').map(Number)
-      const durationMinutes = (endH * 60 + endM) - (startH * 60 + startM)
-      if (durationMinutes > 120) {
-        return NextResponse.json(
-          { error: "Half day leave time range cannot exceed 2 hours" },
-          { status: 400 }
-        )
-      }
-    }
-
     // Validate time selection for SHORT leave
     if (leaveMode === 'SHORT') {
       if (!startTime || !endTime) {
