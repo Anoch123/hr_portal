@@ -168,6 +168,7 @@ export default function ReportsPage() {
                   <TableHead>Start Date</TableHead>
                   <TableHead>End Date</TableHead>
                   <TableHead>Days</TableHead>
+                  <TableHead>Reason</TableHead>
                   <TableHead>Approved By</TableHead>
                 </TableRow>
               </TableHeader>
@@ -180,6 +181,9 @@ export default function ReportsPage() {
                     <TableCell>{request.startDate}</TableCell>
                     <TableCell>{request.endDate}</TableCell>
                     <TableCell>{request.totalDays}</TableCell>
+                    <TableCell className="max-w-[150px] truncate" title={request.reason || ''}>
+                      {request.reason || '-'}
+                    </TableCell>
                     <TableCell>{request.approvedBy || 'N/A'}</TableCell>
                   </TableRow>
                 ))}
@@ -342,6 +346,7 @@ export default function ReportsPage() {
                 <TableHead>Start Date</TableHead>
                 <TableHead>End Date</TableHead>
                 <TableHead>Days</TableHead>
+                <TableHead>Reason</TableHead>
                 <TableHead>Requested</TableHead>
               </TableRow>
             </TableHeader>
@@ -354,6 +359,9 @@ export default function ReportsPage() {
                   <TableCell>{request.startDate}</TableCell>
                   <TableCell>{request.endDate}</TableCell>
                   <TableCell>{request.totalDays}</TableCell>
+                  <TableCell className="max-w-[150px] truncate" title={request.reason || ''}>
+                    {request.reason || '-'}
+                  </TableCell>
                   <TableCell>{new Date(request.requestedAt).toLocaleDateString()}</TableCell>
                 </TableRow>
               ))}

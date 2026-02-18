@@ -298,6 +298,7 @@ export default function LeavesPage() {
                 <TableHead className="min-w-[100px]">Start Date</TableHead>
                 <TableHead className="min-w-[100px]">End Date</TableHead>
                 <TableHead className="min-w-[60px]">Days</TableHead>
+                <TableHead className="min-w-[120px]">Reason</TableHead>
                 <TableHead className="min-w-[100px]">Status</TableHead>
                 <TableHead className="min-w-[100px]">Submitted</TableHead>
                 <TableHead className="min-w-[150px]">Actions</TableHead>
@@ -317,6 +318,9 @@ export default function LeavesPage() {
                   <TableCell>{formatDate(request.start_date)}</TableCell>
                   <TableCell>{formatDate(request.end_date)}</TableCell>
                   <TableCell>{request.total_days}</TableCell>
+                  <TableCell className="max-w-[150px] truncate" title={request.reason || ''}>
+                    {request.reason || '-'}
+                  </TableCell>
                   <TableCell>
                     <div className="flex flex-col gap-1">
                       <Badge className={request.status}>
@@ -332,19 +336,17 @@ export default function LeavesPage() {
                   <TableCell>{formatDate(request.created_at)}</TableCell>
                   <TableCell>
                     <div className="flex gap-2 flex-wrap">
-                      {request.status === "REJECTED" && request.rejection_reason && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedRequest(request)
-                            setDetailsDialogOpen(true)
-                          }}
-                        >
-                          <Eye className="h-4 w-4 mr-1" />
-                          View Details
-                        </Button>
-                      )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedRequest(request)
+                          setDetailsDialogOpen(true)
+                        }}
+                      >
+                        <Eye className="h-4 w-4 mr-1" />
+                        View
+                      </Button>
                       {["PENDING", "APPROVED"].includes(request.status) && (
                         <Button
                           variant="ghost"
@@ -421,21 +423,25 @@ export default function LeavesPage() {
                     {formatDate(request.created_at)}
                   </div>
                 </div>
+                {request.reason && (
+                  <div className="text-sm mb-3 p-2 bg-muted rounded-md">
+                    <span className="text-muted-foreground">Reason:</span>{" "}
+                    {request.reason}
+                  </div>
+                )}
                 <div className="flex gap-2 flex-wrap">
-                  {request.status === "REJECTED" && request.rejection_reason && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full"
-                      onClick={() => {
-                        setSelectedRequest(request)
-                        setDetailsDialogOpen(true)
-                      }}
-                    >
-                      <Eye className="h-4 w-4 mr-1" />
-                      View Details
-                    </Button>
-                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => {
+                      setSelectedRequest(request)
+                      setDetailsDialogOpen(true)
+                    }}
+                  >
+                    <Eye className="h-4 w-4 mr-1" />
+                    View Details
+                  </Button>
                   {["PENDING", "APPROVED"].includes(request.status) && (
                     <Button
                       variant="ghost"
@@ -717,6 +723,11 @@ export default function LeavesPage() {
               <p>
                 <strong>Days:</strong> {selectedRequest.total_days}
               </p>
+              {selectedRequest.reason && (
+                <p>
+                  <strong>Reason:</strong> {selectedRequest.reason}
+                </p>
+              )}
             </div>
           )}
           <DialogFooter className="flex-col sm:flex-row gap-2">
@@ -744,13 +755,15 @@ export default function LeavesPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Rejection Details Dialog */}
+      {/* Leave Request Details Dialog */}
       <Dialog open={detailsDialogOpen} onOpenChange={setDetailsDialogOpen}>
         <DialogContent className="max-w-md mx-4">
           <DialogHeader>
             <DialogTitle>Leave Request Details</DialogTitle>
             <DialogDescription>
-              Your leave request was rejected
+              {selectedRequest?.status === "REJECTED" 
+                ? "Your leave request was rejected" 
+                : "View your leave request details"}
             </DialogDescription>
           </DialogHeader>
           {selectedRequest && (
@@ -771,12 +784,33 @@ export default function LeavesPage() {
                   selectedRequest.leave_mode === 'HALF' ? 'Half Day' :
                     selectedRequest.leave_mode === 'SHORT' ? 'Short Leave' : selectedRequest.leave_mode}
               </p>
-              <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
-                <p className="text-sm font-medium text-red-800">Rejection Reason:</p>
-                <p className="text-sm text-red-700 mt-1">
-                  {selectedRequest.rejection_reason || "No reason provided"}
-                </p>
-              </div>
+              <p>
+                <strong>Status:</strong>{" "}
+                <Badge className={selectedRequest.status}>
+                  {selectedRequest.status}
+                </Badge>
+                {selectedRequest.is_no_pay && (
+                  <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100 ml-2">
+                    No Pay
+                  </Badge>
+                )}
+              </p>
+              {selectedRequest.reason && (
+                <div className="p-3 bg-muted rounded-md">
+                  <p className="text-sm font-medium text-muted-foreground">Reason:</p>
+                  <p className="text-sm mt-1">
+                    {selectedRequest.reason}
+                  </p>
+                </div>
+              )}
+              {selectedRequest.status === "REJECTED" && selectedRequest.rejection_reason && (
+                <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
+                  <p className="text-sm font-medium text-red-800">Rejection Reason:</p>
+                  <p className="text-sm text-red-700 mt-1">
+                    {selectedRequest.rejection_reason || "No reason provided"}
+                  </p>
+                </div>
+              )}
             </div>
           )}
           <DialogFooter>

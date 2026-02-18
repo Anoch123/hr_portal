@@ -204,6 +204,7 @@ export default function ApprovalsPage() {
           <TableHead>Leave Type</TableHead>
           <TableHead>Dates</TableHead>
           <TableHead>Days</TableHead>
+          <TableHead>Reason</TableHead>
           <TableHead>Submitted</TableHead>
           <TableHead>Actions</TableHead>
         </TableRow>
@@ -211,7 +212,7 @@ export default function ApprovalsPage() {
       <TableBody>
         {requests.length === 0 ? (
           <TableRow>
-            <TableCell colSpan={7} className="text-center py-4 text-muted-foreground">
+            <TableCell colSpan={8} className="text-center py-4 text-muted-foreground">
               No requests found
             </TableCell>
           </TableRow>
@@ -236,6 +237,9 @@ export default function ApprovalsPage() {
                 {formatDate(request.startDate)} - {formatDate(request.endDate)}
               </TableCell>
               <TableCell>{request.totalDays}</TableCell>
+              <TableCell className="max-w-[150px] truncate" title={request.reason || ''}>
+                {request.reason || "-"}
+              </TableCell>
               <TableCell>{formatDate(request.createdAt)}</TableCell>
               <TableCell>
                 <div className="flex items-center gap-2">
