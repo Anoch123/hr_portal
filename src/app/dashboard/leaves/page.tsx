@@ -74,6 +74,7 @@ export default function LeavesPage() {
   const [requests, setRequests] = useState<LeaveRequest[]>([])
   const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([])
   const [availableLeaveTypeIds, setAvailableLeaveTypeIds] = useState<Set<string>>(new Set())
+  const [balanceLeaveTypeIds, setBalanceLeaveTypeIds] = useState<Set<string>>(new Set()) // Leave types user has balance record for
   const [loading, setLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
@@ -141,13 +142,17 @@ export default function LeavesPage() {
 
       // Get leave type IDs that have balances (with available days > 0)
       const availableIds = new Set<string>()
+      // Get all leave type IDs that user has a balance record for
+      const balanceIds = new Set<string>()
       balances.forEach((balance) => {
+        balanceIds.add(balance.leaveType.id)
         const availableDays = balance.total_days + balance.carried_over - balance.used_days
         if (availableDays > 0) {
           availableIds.add(balance.leaveType.id)
         }
       })
       setAvailableLeaveTypeIds(availableIds)
+      setBalanceLeaveTypeIds(balanceIds)
     } catch (err) {
       console.error("Error fetching leave types:", err)
     }
@@ -492,12 +497,8 @@ export default function LeavesPage() {
                         if (isOnProbation && !type.name.toLowerCase().includes("probation")) {
                           return false
                         }
-                        // If no balance available for any type, show all types (for no-pay)
-                        if (availableLeaveTypeIds.size === 0) {
-                          return true
-                        }
-                        // Filter by available balance
-                        return availableLeaveTypeIds.has(type.id)
+                        // Only show leave types that user has a balance record for
+                        return balanceLeaveTypeIds.has(type.id)
                       })
                       .map((type) => (
                         <SelectItem key={type.id} value={type.id}>
@@ -506,14 +507,14 @@ export default function LeavesPage() {
                       ))}
                   </SelectContent>
                 </Select>
-                {availableLeaveTypeIds.size === 0 && leaveTypes.length > 0 && (
+                {availableLeaveTypeIds.size === 0 && balanceLeaveTypeIds.size > 0 && (
                   <p className="text-sm text-amber-600">
                     No leave balance available. Your leave request will be submitted as unpaid leave.
                   </p>
                 )}
               </div>
               {/* No Pay Info - shown when balance is insufficient or all balances are zero */}
-              {(availableLeaveTypeIds.size === 0) && leaveTypes.length > 0 && (
+              {(availableLeaveTypeIds.size === 0) && balanceLeaveTypeIds.size > 0 && (
                 <div className="p-3 bg-amber-50 border border-amber-200 rounded-md">
                   <p className="text-sm text-amber-800">
                     No leave balance available. Your leave request will be submitted as unpaid leave (No Pay).

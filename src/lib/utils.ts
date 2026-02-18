@@ -1,6 +1,6 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
-import { differenceInBusinessDays, format, parseISO } from "date-fns"
+import { format, parseISO, eachDayOfInterval, isWeekend } from "date-fns"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -11,8 +11,9 @@ export function calculateBusinessDays(startDate: Date | string, endDate: Date | 
   const start = typeof startDate === 'string' ? parseISO(startDate) : startDate
   const end = typeof endDate === 'string' ? parseISO(endDate) : endDate
   
-  // Add 1 because differenceInBusinessDays doesn't include the start date
-  return differenceInBusinessDays(end, start) + 1
+  // Get all days in the interval and count only non-weekend days
+  const days = eachDayOfInterval({ start, end })
+  return days.filter(day => !isWeekend(day)).length
 }
 
 // Format date for display
