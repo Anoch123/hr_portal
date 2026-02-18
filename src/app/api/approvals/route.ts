@@ -42,6 +42,30 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get("status") || "PENDING"
     const search = searchParams.get("search") || ""
 
+    // Managers can only see their direct reports' requests
+    // HR_MANAGER and ADMIN can see all pending requests
+    let allowedUserIds: string[] | null = null
+    if (userRole === "MANAGER") {
+      const { data: employees } = await supabaseAdmin
+        .from("users")
+        .select("id")
+        .eq("manager_id", userId)
+
+      allowedUserIds = employees?.map((e) => e.id) || []
+    }
+
+    // If search is provided, first find matching user IDs
+    let searchUserIds: string[] | null = null
+    if (search) {
+      const { data: matchingUsers } = await supabaseAdmin
+        .from("users")
+        .select("id")
+        .or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%,email.ilike.%${search}%`)
+      
+      searchUserIds = matchingUsers?.map((u) => u.id) || []
+    }
+
+    // Build the query with appropriate filters
     let query = supabaseAdmin
       .from("leave_requests")
       .select(
@@ -54,23 +78,18 @@ export async function GET(request: NextRequest) {
       )
       .eq("status", status)
 
-    // Add search functionality
-    if (search) {
-      query = query.or(`user.first_name.ilike.%${search}%,user.last_name.ilike.%${search}%,user.email.ilike.%${search}%`)
+    // Apply user filtering based on role and search
+    if (allowedUserIds && searchUserIds) {
+      // Manager with search: intersect both conditions
+      const intersectedIds = allowedUserIds.filter(id => searchUserIds!.includes(id))
+      query = query.in("user_id", intersectedIds.length > 0 ? intersectedIds : ["no-match-placeholder"])
+    } else if (allowedUserIds) {
+      // Manager without search
+      query = query.in("user_id", allowedUserIds.length > 0 ? allowedUserIds : ["no-match-placeholder"])
+    } else if (searchUserIds) {
+      // HR/Admin with search
+      query = query.in("user_id", searchUserIds.length > 0 ? searchUserIds : ["no-match-placeholder"])
     }
-
-    // Managers can only see their direct reports' requests
-    // HR_MANAGER and ADMIN can see all pending requests
-    if (userRole === "MANAGER") {
-      const { data: employees } = await supabaseAdmin
-        .from("users")
-        .select("id")
-        .eq("manager_id", userId)
-
-      const employeeIds = employees?.map((e) => e.id) || []
-      query = query.in("user_id", employeeIds)
-    }
-    // HR_MANAGER and ADMIN see all without filtering
 
     const { data: requests, count, error: queryError } = await query
       .order("created_at", { ascending: true })

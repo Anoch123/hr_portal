@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useSession } from "next-auth/react"
+import { Eye, EyeOff } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -16,6 +17,11 @@ export default function SettingsPage() {
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
+  })
+  const [showPassword, setShowPassword] = useState({
+    currentPassword: false,
+    newPassword: false,
+    confirmPassword: false,
   })
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState("")
@@ -98,39 +104,99 @@ export default function SettingsPage() {
           <form onSubmit={handlePasswordUpdate} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="currentPassword">Current Password</Label>
-              <Input
-                id="currentPassword"
-                type="password"
-                value={passwordData.currentPassword}
-                onChange={(e) =>
-                  setPasswordData({ ...passwordData, currentPassword: e.target.value })
-                }
-                required
-              />
+              <div className="relative">
+                <Input
+                  id="currentPassword"
+                  type={showPassword.currentPassword ? "text" : "password"}
+                  value={passwordData.currentPassword}
+                  onChange={(e) =>
+                    setPasswordData({ ...passwordData, currentPassword: e.target.value })
+                  }
+                  required
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  onClick={() =>
+                    setShowPassword({ ...showPassword, currentPassword: !showPassword.currentPassword })
+                  }
+                >
+                  {showPassword.currentPassword ? (
+                    <EyeOff className="h-4 w-4" aria-hidden="true" />
+                  ) : (
+                    <Eye className="h-4 w-4" aria-hidden="true" />
+                  )}
+                  <span className="sr-only">
+                    {showPassword.currentPassword ? "Hide" : "Show"} current password
+                  </span>
+                </button>
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="newPassword">New Password</Label>
-              <Input
-                id="newPassword"
-                type="password"
-                value={passwordData.newPassword}
-                onChange={(e) =>
-                  setPasswordData({ ...passwordData, newPassword: e.target.value })
-                }
-                required
-              />
+              <div className="relative">
+                <Input
+                  id="newPassword"
+                  type={showPassword.newPassword ? "text" : "password"}
+                  value={passwordData.newPassword}
+                  onChange={(e) =>
+                    setPasswordData({ ...passwordData, newPassword: e.target.value })
+                  }
+                  required
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  onClick={() =>
+                    setShowPassword({ ...showPassword, newPassword: !showPassword.newPassword })
+                  }
+                >
+                  {showPassword.newPassword ? (
+                    <EyeOff className="h-4 w-4" aria-hidden="true" />
+                  ) : (
+                    <Eye className="h-4 w-4" aria-hidden="true" />
+                  )}
+                  <span className="sr-only">
+                    {showPassword.newPassword ? "Hide" : "Show"} new password
+                  </span>
+                </button>
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirmPassword">Confirm New Password</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                value={passwordData.confirmPassword}
-                onChange={(e) =>
-                  setPasswordData({ ...passwordData, confirmPassword: e.target.value })
-                }
-                required
-              />
+              <div className="relative">
+                <Input
+                  id="confirmPassword"
+                  type={showPassword.confirmPassword ? "text" : "password"}
+                  value={passwordData.confirmPassword}
+                  onChange={(e) =>
+                    setPasswordData({ ...passwordData, confirmPassword: e.target.value })
+                  }
+                  required
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  onClick={() =>
+                    setShowPassword({ ...showPassword, confirmPassword: !showPassword.confirmPassword })
+                  }
+                >
+                  {showPassword.confirmPassword ? (
+                    <EyeOff className="h-4 w-4" aria-hidden="true" />
+                  ) : (
+                    <Eye className="h-4 w-4" aria-hidden="true" />
+                  )}
+                  <span className="sr-only">
+                    {showPassword.confirmPassword ? "Hide" : "Show"} confirm password
+                  </span>
+                </button>
+              </div>
             </div>
             {message && (
               <p className={`text-sm ${message.includes("successfully") ? "text-green-600" : "text-red-600"}`}>
