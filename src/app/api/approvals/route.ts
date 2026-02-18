@@ -85,6 +85,7 @@ export async function GET(request: NextRequest) {
         reason: request.reason,
         status: request.status,
         isNoPay: request.is_no_pay || false,
+        rejectionReason: request.rejection_reason,
         createdAt: request.created_at,
         user: request.user ? {
           id: request.user.id,

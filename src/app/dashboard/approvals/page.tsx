@@ -50,6 +50,7 @@ interface LeaveRequest {
   reason: string | null
   status: string
   isNoPay: boolean
+  rejectionReason: string | null
   createdAt: string
   user: User
   leaveType: LeaveType
@@ -204,13 +205,13 @@ export default function ApprovalsPage() {
           <TableHead>Dates</TableHead>
           <TableHead>Days</TableHead>
           <TableHead>Submitted</TableHead>
-          {showActions && <TableHead>Actions</TableHead>}
+          <TableHead>Actions</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {requests.length === 0 ? (
           <TableRow>
-            <TableCell colSpan={showActions ? 7 : 6} className="text-center py-4 text-muted-foreground">
+            <TableCell colSpan={7} className="text-center py-4 text-muted-foreground">
               No requests found
             </TableCell>
           </TableRow>
@@ -236,50 +237,60 @@ export default function ApprovalsPage() {
               </TableCell>
               <TableCell>{request.totalDays}</TableCell>
               <TableCell>{formatDate(request.createdAt)}</TableCell>
-              {showActions && (
-                <TableCell>
-                  <div className="flex items-center gap-2">
+              <TableCell>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedRequest(request)
+                      setViewDialogOpen(true)
+                    }}
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                  {showActions && request.status === "PENDING" && (
+                    <>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-green-600 hover:text-green-700"
+                        onClick={() => handleApprove(request.id)}
+                        disabled={processingRequests.has(request.id)}
+                      >
+                        {processingRequests.has(request.id) ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Check className="h-4 w-4" />
+                        )}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-600 hover:text-red-700"
+                        onClick={() => {
+                          setSelectedRequest(request)
+                          setRejectDialogOpen(true)
+                        }}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </>
+                  )}
+                  {!showActions && request.status === "REJECTED" && request.rejectionReason && (
                     <Button
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
                       onClick={() => {
                         setSelectedRequest(request)
                         setViewDialogOpen(true)
                       }}
                     >
-                      <Eye className="h-4 w-4" />
+                      View Details
                     </Button>
-                    {request.status === "PENDING" && (
-                      <>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-green-600 hover:text-green-700"
-                          onClick={() => handleApprove(request.id)}
-                          disabled={processingRequests.has(request.id)}
-                        >
-                          {processingRequests.has(request.id) ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Check className="h-4 w-4" />
-                          )}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-red-600 hover:text-red-700"
-                          onClick={() => {
-                            setSelectedRequest(request)
-                            setRejectDialogOpen(true)
-                          }}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </TableCell>
-              )}
+                  )}
+                </div>
+              </TableCell>
             </TableRow>
           ))
         )}
@@ -471,6 +482,12 @@ export default function ApprovalsPage() {
                 <div>
                   <Label className="text-muted-foreground">Reason</Label>
                   <p className="font-medium">{selectedRequest.reason}</p>
+                </div>
+              )}
+              {selectedRequest.status === "REJECTED" && selectedRequest.rejectionReason && (
+                <div className="bg-red-50 p-3 rounded-md">
+                  <Label className="text-red-600">Rejection Reason</Label>
+                  <p className="font-medium text-red-700">{selectedRequest.rejectionReason}</p>
                 </div>
               )}
             </div>
