@@ -89,8 +89,6 @@ export default function LeavesPage() {
   const [endDate, setEndDate] = useState<Date | undefined>()
   const [leaveMode, setLeaveMode] = useState<'FULL' | 'HALF' | 'SHORT'>('FULL')
   const [reason, setReason] = useState<'Exam Leave'| 'Study Leave'| 'Religious Holiday'| 'Sick Leave'| 'Medical Appointment'| 'Hospitalization'| 'Funeral'| 'Personal Leave'>('Personal Leave')
-  const [isNoPay, setIsNoPay] = useState(false)
-  const [showNoPayOption, setShowNoPayOption] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState("")
 
@@ -150,10 +148,6 @@ export default function LeavesPage() {
         }
       })
       setAvailableLeaveTypeIds(availableIds)
-      
-      // Show no-pay option if all leave types have zero balance
-      // But still allow leave requests as no-pay
-      setShowNoPayOption(availableIds.size === 0 && data.length > 0)
     } catch (err) {
       console.error("Error fetching leave types:", err)
     }
@@ -216,19 +210,12 @@ export default function LeavesPage() {
           endDate: formatLocalDate(endDate),
           leaveMode,
           reason,
-          isNoPay,
         }),
       })
 
       const data = await res.json()
       if (!res.ok) {
-        // Check if the error is about insufficient balance
-        if (data.insufficientBalance) {
-          setShowNoPayOption(true)
-          setError(data.error + " Please check the 'No Pay' option to submit as unpaid leave.")
-        } else {
-          setError(data.error || "Failed to submit request")
-        }
+        setError(data.error || "Failed to submit request")
         return
       }
 
@@ -275,8 +262,6 @@ export default function LeavesPage() {
     setEndDate(undefined)
     setLeaveMode('FULL')
     setReason('Personal Leave')
-    setIsNoPay(false)
-    setShowNoPayOption(false)
     setError("")
   }
 
@@ -527,19 +512,12 @@ export default function LeavesPage() {
                   </p>
                 )}
               </div>
-              {/* No Pay Option - shown when balance is insufficient or all balances are zero */}
-              {(showNoPayOption || availableLeaveTypeIds.size === 0) && leaveTypes.length > 0 && (
-                <div className="flex items-center space-x-2 p-3 bg-amber-50 border border-amber-200 rounded-md">
-                  <input
-                    type="checkbox"
-                    id="isNoPay"
-                    checked={isNoPay}
-                    onChange={(e) => setIsNoPay(e.target.checked)}
-                    className="h-4 w-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
-                  />
-                  <Label htmlFor="isNoPay" className="text-sm text-amber-800 cursor-pointer">
-                    Submit as No Pay (Unpaid Leave)
-                  </Label>
+              {/* No Pay Info - shown when balance is insufficient or all balances are zero */}
+              {(availableLeaveTypeIds.size === 0) && leaveTypes.length > 0 && (
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-md">
+                  <p className="text-sm text-amber-800">
+                    No leave balance available. Your leave request will be submitted as unpaid leave (No Pay).
+                  </p>
                 </div>
               )}
               <div className="space-y-2">

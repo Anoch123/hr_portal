@@ -83,6 +83,7 @@ export async function POST(
     }
 
     // Update leave balance - only if request was APPROVED (balance is updated only on approval)
+    // This includes no-pay leaves which also update used_days
     if (previousStatus === "APPROVED") {
       const currentYear = new Date().getFullYear()
 

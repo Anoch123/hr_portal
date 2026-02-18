@@ -93,27 +93,37 @@ export async function POST(
     }
 
     // Update leave balance - add to used_days (balance is now updated only on approval)
-    // Skip balance update for no-pay leave requests
-    if (!leaveRequest.is_no_pay) {
-      const currentYear = new Date().getFullYear()
-      
-      const { data: balance } = await supabaseAdmin
-        .from("leave_balances")
-        .select("*")
-        .eq("user_id", leaveRequest.user_id)
-        .eq("leave_type_id", leaveRequest.leave_type_id)
-        .eq("year", currentYear)
-        .single()
+    // For no-pay leave, we still update used_days to track the leave taken (can go negative)
+    const currentYear = new Date().getFullYear()
+    
+    const { data: balance } = await supabaseAdmin
+      .from("leave_balances")
+      .select("*")
+      .eq("user_id", leaveRequest.user_id)
+      .eq("leave_type_id", leaveRequest.leave_type_id)
+      .eq("year", currentYear)
+      .single()
 
-      if (balance) {
-        await supabaseAdmin
-          .from("leave_balances")
-          .update({
-            used_days: (balance.used_days || 0) + leaveRequest.total_days,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", balance.id)
-      }
+    if (balance) {
+      await supabaseAdmin
+        .from("leave_balances")
+        .update({
+          used_days: (balance.used_days || 0) + leaveRequest.total_days,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", balance.id)
+    } else if (leaveRequest.is_no_pay) {
+      // For no-pay leave without existing balance, create one with negative used_days
+      await supabaseAdmin
+        .from("leave_balances")
+        .insert({
+          user_id: leaveRequest.user_id,
+          leave_type_id: leaveRequest.leave_type_id,
+          year: currentYear,
+          total_days: 0,
+          carried_over: 0,
+          used_days: leaveRequest.total_days,
+        })
     }
 
     // Create history entry
@@ -124,7 +134,9 @@ export async function POST(
       previous_status: "PENDING",
       new_status: "APPROVED",
       changed_by: user.id,
-      details: `Leave request approved by ${userProfile.first_name} ${userProfile.last_name}`,
+      details: leaveRequest.is_no_pay 
+        ? `No-pay leave request approved by ${userProfile.first_name} ${userProfile.last_name}`
+        : `Leave request approved by ${userProfile.first_name} ${userProfile.last_name}`,
     })
 
     // Send email to employee

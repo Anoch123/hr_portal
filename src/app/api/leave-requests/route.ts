@@ -216,19 +216,11 @@ export async function POST(request: NextRequest) {
       availableDays = balance.total_days - balance.used_days
     }
 
-    // If no balance or insufficient balance, check if this is a no-pay request
+    // If no balance or insufficient balance, automatically mark as no-pay for the excess days
+    // This allows the request to proceed and will result in negative balance
     if (totalDays > availableDays) {
-      if (!isNoPay) {
-        return NextResponse.json(
-          { 
-            error: `Insufficient leave balance. Available: ${availableDays} days. You can submit this as a no-pay leave request.`,
-            insufficientBalance: true,
-            availableDays 
-          },
-          { status: 400 }
-        )
-      }
-      // If isNoPay is true, allow the request to proceed without balance check
+      // Automatically treat as no-pay leave when balance is insufficient
+      // The excess days will be tracked as no-pay, resulting in negative balance
     }
 
     // Check for overlapping requests
@@ -247,6 +239,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Automatically mark as no-pay if balance is insufficient
+    // This allows partial no-pay: if balance is 1 and request is 2 days,
+    // it will use 1 paid day and 1 no-pay day, resulting in negative balance
+    const effectiveIsNoPay = isNoPay || (totalDays > availableDays)
+
     // Create leave request
     const { leaveRequest, error: createError } = await createRequest(
       userId,
@@ -256,7 +253,7 @@ export async function POST(request: NextRequest) {
       totalDays,
       reason,
       leaveMode,
-      isNoPay
+      effectiveIsNoPay
     )
 
     if (createError) throw createError
