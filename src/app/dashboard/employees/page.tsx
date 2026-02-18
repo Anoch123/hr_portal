@@ -39,7 +39,7 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs"
 import { formatRole } from "@/lib/utils"
-import { Plus, Search, Edit, UserX, Calendar, UserMinus } from "lucide-react"
+import { Plus, Search, Edit, UserX, Calendar, UserMinus, Trash2 } from "lucide-react"
 
 interface LeaveBalance {
   id: string
@@ -482,6 +482,39 @@ export default function EmployeesPage() {
     setEditingBalance(null)
     setShowAddForm(false)
     resetBalanceForm()
+  }
+
+  const handleDeleteBalance = async (balanceId: string) => {
+    if (!selectedEmployee) return
+
+    if (!confirm("Are you sure you want to delete this leave balance? This action cannot be undone.")) return
+
+    setSubmitting(true)
+    try {
+      const res = await fetch(`/api/leave-balances?id=${balanceId}`, {
+        method: "DELETE",
+      })
+
+      const data = await res.json()
+      if (!res.ok) {
+        setError(data.error || "Failed to delete leave balance")
+        return
+      }
+
+      // Refresh balances
+      const currentYear = new Date().getFullYear()
+      const refreshRes = await fetch(`/api/leave-balances?year=${currentYear}&employee_id=${selectedEmployee.id}`)
+      const updatedBalances = await refreshRes.json()
+      setEmployeeBalances(updatedBalances || [])
+
+      // Also refresh the employee balances map
+      fetchEmployees()
+      setError("")
+    } catch (err) {
+      setError("An error occurred. Please try again.")
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   const startAddingBalance = () => {
@@ -1282,14 +1315,26 @@ export default function EmployeesPage() {
                             Total: {balance.total_days} days | Carried Over: {balance.carried_over} days | Used: {balance.used_days} days | Available: {(balance.total_days + balance.carried_over - balance.used_days).toFixed(1)} days
                           </div>
                         </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => startEditingBalance(balance)}
-                        >
-                          <Edit className="h-4 w-4 mr-2" />
-                          Edit
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => startEditingBalance(balance)}
+                          >
+                            <Edit className="h-4 w-4 mr-2" />
+                            Edit
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => handleDeleteBalance(balance.id)}
+                            disabled={balance.used_days > 0}
+                            title={balance.used_days > 0 ? "Cannot delete balance with used days" : "Delete balance"}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     </Card>
                   ))}

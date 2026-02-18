@@ -171,3 +171,74 @@ export async function POST(request: NextRequest) {
     )
   }
 }
+
+// DELETE /api/leave-balances - Delete a leave balance
+export async function DELETE(request: NextRequest) {
+  try {
+    const { user } = await getCurrentUser()
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const { hasPermission: canDelete } = await hasPermission(user.id, "leave_balances:update")
+    if (!canDelete) {
+      return NextResponse.json({ error: "You do not have permission to delete leave balances." }, { status: 403 })
+    }
+
+    const { searchParams } = new URL(request.url)
+    const balanceId = searchParams.get("id")
+
+    if (!balanceId) {
+      return NextResponse.json(
+        { error: "Balance ID is required" },
+        { status: 400 }
+      )
+    }
+
+    // Check if the balance exists and get its details
+    const { data: existingBalance, error: fetchError } = await supabaseAdmin
+      .from("leave_balances")
+      .select("*")
+      .eq("id", balanceId)
+      .single()
+
+    if (fetchError || !existingBalance) {
+      return NextResponse.json(
+        { error: "Leave balance not found" },
+        { status: 404 }
+      )
+    }
+
+    // Check if there are used days - prevent deletion if leave has been used
+    if (existingBalance.used_days > 0) {
+      return NextResponse.json(
+        { error: "Cannot delete leave balance with used days. Consider setting total days to 0 instead." },
+        { status: 400 }
+      )
+    }
+
+    // Delete the balance
+    const { error: deleteError } = await supabaseAdmin
+      .from("leave_balances")
+      .delete()
+      .eq("id", balanceId)
+
+    if (deleteError) {
+      console.error("Error deleting leave balance:", deleteError)
+      return NextResponse.json(
+        { error: "Failed to delete leave balance" },
+        { status: 400 }
+      )
+    }
+
+    return NextResponse.json({
+      message: "Leave balance deleted successfully",
+    })
+  } catch (error) {
+    console.error("Error deleting leave balance:", error)
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    )
+  }
+}

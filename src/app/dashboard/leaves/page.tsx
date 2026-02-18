@@ -42,6 +42,19 @@ interface LeaveType {
   description: string | null
 }
 
+interface LeaveBalance {
+  id: string
+  year: number
+  total_days: number
+  used_days: number
+  carried_over: number
+  leaveType: {
+    id: string
+    name: string
+    description: string | null
+  }
+}
+
 interface LeaveRequest {
   id: string
   start_date: string
@@ -59,6 +72,7 @@ export default function LeavesPage() {
   const { data: session } = useSession()
   const [requests, setRequests] = useState<LeaveRequest[]>([])
   const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([])
+  const [availableLeaveTypeIds, setAvailableLeaveTypeIds] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
@@ -114,9 +128,25 @@ export default function LeavesPage() {
 
   const fetchLeaveTypes = async () => {
     try {
+      // Fetch all active leave types
       const res = await fetch("/api/leave-types?activeOnly=true")
       const data = await res.json()
       setLeaveTypes(data || [])
+
+      // Fetch user's leave balances to determine available leave types
+      const currentYear = new Date().getFullYear()
+      const balancesRes = await fetch(`/api/leave-balances?year=${currentYear}`)
+      const balances: LeaveBalance[] = await balancesRes.json()
+
+      // Get leave type IDs that have balances (with available days > 0)
+      const availableIds = new Set<string>()
+      balances.forEach((balance) => {
+        const availableDays = balance.total_days + balance.carried_over - balance.used_days
+        if (availableDays > 0) {
+          availableIds.add(balance.leaveType.id)
+        }
+      })
+      setAvailableLeaveTypeIds(availableIds)
     } catch (err) {
       console.error("Error fetching leave types:", err)
     }
@@ -436,11 +466,14 @@ export default function LeavesPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {leaveTypes
-                      .filter((type) =>
-                        isOnProbation
-                          ? type.name.toLowerCase().includes("probation")
-                          : true
-                      )
+                      .filter((type) => {
+                        // Filter by probation status
+                        if (isOnProbation && !type.name.toLowerCase().includes("probation")) {
+                          return false
+                        }
+                        // Filter by available balance
+                        return availableLeaveTypeIds.has(type.id)
+                      })
                       .map((type) => (
                         <SelectItem key={type.id} value={type.id}>
                           {type.name}
@@ -448,6 +481,11 @@ export default function LeavesPage() {
                       ))}
                   </SelectContent>
                 </Select>
+                {availableLeaveTypeIds.size === 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    No leave types with available balance. Contact HR to set up your leave entitlements.
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label>Leave Mode *</Label>
