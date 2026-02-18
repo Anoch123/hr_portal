@@ -481,7 +481,7 @@ export default function LeavesPage() {
               Request Leave
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md mx-4">
+          <DialogContent className="w-[95vw] max-w-md">
             <DialogHeader>
               <DialogTitle>Request Leave {isOnProbation}</DialogTitle>
               <DialogDescription>
@@ -704,7 +704,7 @@ export default function LeavesPage() {
 
       {/* Cancel Dialog */}
       <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
-        <DialogContent className="max-w-md mx-4">
+        <DialogContent className="w-[95vw] max-w-md">
           <DialogHeader>
             <DialogTitle>Cancel Leave Request</DialogTitle>
             <DialogDescription>
@@ -757,7 +757,7 @@ export default function LeavesPage() {
 
       {/* Leave Request Details Dialog */}
       <Dialog open={detailsDialogOpen} onOpenChange={setDetailsDialogOpen}>
-        <DialogContent className="max-w-md mx-4">
+        <DialogContent className="w-[95vw] max-w-md">
           <DialogHeader>
             <DialogTitle>Leave Request Details</DialogTitle>
             <DialogDescription>
