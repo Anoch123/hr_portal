@@ -29,7 +29,17 @@ export async function POST(
 
     const { data: leaveRequest, error: fetchError } = await supabaseAdmin
       .from("leave_requests")
-      .select("*, leaveType:leave_types(*), user:users!leave_requests_user_id_fkey(*)")
+      .select(`
+        *,
+        leaveType:leave_types(*),
+        user:users!leave_requests_user_id_fkey(
+          id,
+          first_name,
+          last_name,
+          email,
+          manager_id
+        )
+      `)
       .eq("id", id)
       .single()
 
@@ -108,19 +118,29 @@ export async function POST(
     })
 
     // Send email to manager if request was approved
-    if (previousStatus === "APPROVED" && leaveRequest.user.manager) {
-      const emailContent = emailTemplates.leaveRequestCancelled(
-        `${leaveRequest.user.first_name} ${leaveRequest.user.last_name}`,
-        leaveRequest.leaveType.name,
-        formatDate(leaveRequest.start_date),
-        formatDate(leaveRequest.end_date),
-        `${leaveRequest.user.manager.first_name} ${leaveRequest.user.manager.last_name}`
-      )
-      await sendEmail({
-        to: leaveRequest.user.manager.email,
-        subject: emailContent.subject,
-        html: emailContent.html,
-      })
+    if (previousStatus === "APPROVED" && leaveRequest.user.manager_id) {
+      // Fetch manager details
+      const { data: manager } = await supabaseAdmin
+        .from("users")
+        .select("id, first_name, last_name, email")
+        .eq("id", leaveRequest.user.manager_id)
+        .single()
+
+      if (manager) {
+        const emailContent = emailTemplates.leaveRequestCancelled(
+          `${leaveRequest.user.first_name} ${leaveRequest.user.last_name}`,
+          leaveRequest.leaveType.name,
+          formatDate(leaveRequest.start_date),
+          formatDate(leaveRequest.end_date),
+          `${manager.first_name} ${manager.last_name}`,
+          reason
+        )
+        await sendEmail({
+          to: manager.email,
+          subject: emailContent.subject,
+          html: emailContent.html,
+        })
+      }
     }
 
     return NextResponse.json({
