@@ -44,6 +44,11 @@ export async function getLeaveBalance(userId: string, year: number, leaveTypeId?
   }
 }
 
+export interface TimeSelection {
+  startTime?: string // Format: HH:MM (e.g., "09:00")
+  endTime?: string   // Format: HH:MM (e.g., "17:00")
+}
+
 export async function createLeaveRequest(
   userId: string,
   leaveTypeId: string,
@@ -52,7 +57,8 @@ export async function createLeaveRequest(
   totalDays: number,
   reason?: string,
   leaveMode: 'FULL' | 'HALF' | 'SHORT' = 'FULL',
-  isNoPay: boolean = false
+  isNoPay: boolean = false,
+  timeSelection?: TimeSelection
 ) {
   try {
     const { data, error } = await supabaseAdmin
@@ -67,16 +73,23 @@ export async function createLeaveRequest(
         status: 'PENDING',
         leave_mode: leaveMode,
         is_no_pay: isNoPay,
+        start_time: timeSelection?.startTime || null,
+        end_time: timeSelection?.endTime || null,
       })
       .select()
       .single()
 
     if (error) throw error
 
-    // Log to history
-    const historyDetails = isNoPay 
+    // Log to history with time details
+    let historyDetails = isNoPay 
       ? 'Leave request created (No Pay)' 
       : 'Leave request created'
+    
+    if ((leaveMode === 'HALF' || leaveMode === 'SHORT') && timeSelection?.startTime && timeSelection?.endTime) {
+      historyDetails += ` (${timeSelection.startTime} - ${timeSelection.endTime})`
+    }
+    
     await addLeaveHistory(userId, leaveTypeId, 'CREATED', null, 'PENDING', userId, historyDetails)
 
     return { leaveRequest: data as LeaveRequest, error: null }

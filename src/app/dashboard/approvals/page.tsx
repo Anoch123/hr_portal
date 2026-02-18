@@ -52,6 +52,9 @@ interface LeaveRequest {
   isNoPay: boolean
   rejectionReason: string | null
   createdAt: string
+  leaveMode: 'FULL' | 'HALF' | 'SHORT'
+  startTime: string | null
+  endTime: string | null
   user: User
   leaveType: LeaveType
 }
@@ -202,6 +205,7 @@ export default function ApprovalsPage() {
           <TableHead>Employee</TableHead>
           <TableHead>Department</TableHead>
           <TableHead>Leave Type</TableHead>
+          <TableHead>Mode</TableHead>
           <TableHead>Dates</TableHead>
           <TableHead>Days</TableHead>
           <TableHead>Reason</TableHead>
@@ -212,7 +216,7 @@ export default function ApprovalsPage() {
       <TableBody>
         {requests.length === 0 ? (
           <TableRow>
-            <TableCell colSpan={8} className="text-center py-4 text-muted-foreground">
+            <TableCell colSpan={9} className="text-center py-4 text-muted-foreground">
               No requests found
             </TableCell>
           </TableRow>
@@ -232,6 +236,11 @@ export default function ApprovalsPage() {
                     </Badge>
                   )}
                 </div>
+              </TableCell>
+              <TableCell>
+                {request.leaveMode === 'FULL' ? 'Full Day' :
+                  request.leaveMode === 'HALF' ? `Half Day (${request.startTime || 'N/A'} - ${request.endTime || 'N/A'})` :
+                    request.leaveMode === 'SHORT' ? `Short (${request.startTime || 'N/A'} - ${request.endTime || 'N/A'})` : request.leaveMode}
               </TableCell>
               <TableCell>
                 {formatDate(request.startDate)} - {formatDate(request.endDate)}
@@ -466,10 +475,18 @@ export default function ApprovalsPage() {
                   </Badge>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground">Total Days</Label>
-                  <p className="font-medium">{selectedRequest.totalDays}</p>
-                </div>
-                <div>
+                   <Label className="text-muted-foreground">Total Days</Label>
+                   <p className="font-medium">{selectedRequest.totalDays}</p>
+                 </div>
+                 <div>
+                   <Label className="text-muted-foreground">Leave Mode</Label>
+                   <p className="font-medium">
+                     {selectedRequest.leaveMode === 'FULL' ? 'Full Day' :
+                       selectedRequest.leaveMode === 'HALF' ? `Half Day (${selectedRequest.startTime || 'N/A'} - ${selectedRequest.endTime || 'N/A'})` :
+                         selectedRequest.leaveMode === 'SHORT' ? `Short Leave (${selectedRequest.startTime || 'N/A'} - ${selectedRequest.endTime || 'N/A'})` : selectedRequest.leaveMode}
+                   </p>
+                 </div>
+                 <div>
                   <Label className="text-muted-foreground">Start Date</Label>
                   <p className="font-medium">
                     {formatDate(selectedRequest.startDate)}

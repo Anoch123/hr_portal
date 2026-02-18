@@ -106,6 +106,9 @@ export async function GET(request: NextRequest) {
         isNoPay: request.is_no_pay || false,
         rejectionReason: request.rejection_reason,
         createdAt: request.created_at,
+        leaveMode: request.leave_mode,
+        startTime: request.start_time,
+        endTime: request.end_time,
         user: request.user ? {
           id: request.user.id,
           firstName: request.user.first_name,

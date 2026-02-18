@@ -66,6 +66,8 @@ interface LeaveRequest {
   is_no_pay: boolean
   created_at: string
   rejection_reason: string | null
+  start_time: string | null
+  end_time: string | null
   leaveType: LeaveType
 }
 
@@ -90,6 +92,10 @@ export default function LeavesPage() {
   const [endDate, setEndDate] = useState<Date | undefined>()
   const [leaveMode, setLeaveMode] = useState<'FULL' | 'HALF' | 'SHORT'>('FULL')
   const [reason, setReason] = useState<'Exam Leave'| 'Study Leave'| 'Religious Holiday'| 'Sick Leave'| 'Medical Appointment'| 'Hospitalization'| 'Funeral'| 'Personal Leave'>('Personal Leave')
+  const [halfDayStartTime, setHalfDayStartTime] = useState('08:30')
+  const [halfDayEndTime, setHalfDayEndTime] = useState('10:30')
+  const [startTime, setStartTime] = useState('09:00')
+  const [endTime, setEndTime] = useState('11:00')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState("")
 
@@ -204,6 +210,46 @@ export default function LeavesPage() {
       return
     }
 
+    // Validate time selection for half day (max 2 hours)
+    if (leaveMode === 'HALF') {
+      if (!halfDayStartTime || !halfDayEndTime) {
+        setError("Please select start and end time for half day leave")
+        return
+      }
+      if (halfDayStartTime >= halfDayEndTime) {
+        setError("Start time must be before end time")
+        return
+      }
+      // Calculate duration in hours
+      const [halfStartH, halfStartM] = halfDayStartTime.split(':').map(Number)
+      const [halfEndH, halfEndM] = halfDayEndTime.split(':').map(Number)
+      const halfDurationMinutes = (halfEndH * 60 + halfEndM) - (halfStartH * 60 + halfStartM)
+      if (halfDurationMinutes > 120) {
+        setError("Half day leave time range cannot exceed 2 hours")
+        return
+      }
+    }
+
+    // Validate time selection for short leave (max 2 hours)
+    if (leaveMode === 'SHORT') {
+      if (!startTime || !endTime) {
+        setError("Please select start and end time for short leave")
+        return
+      }
+      if (startTime >= endTime) {
+        setError("Start time must be before end time")
+        return
+      }
+      // Calculate duration in hours
+      const [startH, startM] = startTime.split(':').map(Number)
+      const [endH, endM] = endTime.split(':').map(Number)
+      const durationMinutes = (endH * 60 + endM) - (startH * 60 + startM)
+      if (durationMinutes > 120) {
+        setError("Short leave cannot exceed 2 hours")
+        return
+      }
+    }
+
     setSubmitting(true)
     try {
       const res = await fetch("/api/leave-requests", {
@@ -215,6 +261,8 @@ export default function LeavesPage() {
           endDate: formatLocalDate(endDate),
           leaveMode,
           reason,
+          startTime: leaveMode === 'HALF' ? halfDayStartTime : leaveMode === 'SHORT' ? startTime : undefined,
+          endTime: leaveMode === 'HALF' ? halfDayEndTime : leaveMode === 'SHORT' ? endTime : undefined,
         }),
       })
 
@@ -267,6 +315,10 @@ export default function LeavesPage() {
     setEndDate(undefined)
     setLeaveMode('FULL')
     setReason('Personal Leave')
+    setHalfDayStartTime('08:30')
+    setHalfDayEndTime('12:30')
+    setStartTime('09:00')
+    setEndTime('11:00')
     setError("")
   }
 
@@ -302,8 +354,8 @@ export default function LeavesPage() {
                   </TableCell>
                   <TableCell>
                     {request.leave_mode === 'FULL' ? 'Full Day' :
-                      request.leave_mode === 'HALF' ? 'Half Day' :
-                        request.leave_mode === 'SHORT' ? 'Short Leave' : request.leave_mode}
+                      request.leave_mode === 'HALF' ? `Half Day (${request.start_time || 'N/A'} - ${request.end_time || 'N/A'})` :
+                        request.leave_mode === 'SHORT' ? `Short Leave (${request.start_time || 'N/A'} - ${request.end_time || 'N/A'})` : request.leave_mode}
                   </TableCell>
                   <TableCell>{formatDate(request.start_date)}</TableCell>
                   <TableCell>{formatDate(request.end_date)}</TableCell>
@@ -380,8 +432,8 @@ export default function LeavesPage() {
                     <h3 className="font-medium">{request.leaveType?.name || 'Unknown'}</h3>
                     <p className="text-sm text-muted-foreground">
                       {request.leave_mode === 'FULL' ? 'Full Day' :
-                        request.leave_mode === 'HALF' ? 'Half Day' :
-                          request.leave_mode === 'SHORT' ? 'Short Leave' : request.leave_mode}
+                        request.leave_mode === 'HALF' ? `Half Day (${request.start_time || 'N/A'} - ${request.end_time || 'N/A'})` :
+                          request.leave_mode === 'SHORT' ? `Short Leave (${request.start_time || 'N/A'} - ${request.end_time || 'N/A'})` : request.leave_mode}
                     </p>
                   </div>
                   <div className="flex flex-col gap-1 items-end">
@@ -569,6 +621,67 @@ export default function LeavesPage() {
                   </Select>
                 )}
               </div>
+              
+              {/* Half Day Time Selection */}
+              {leaveMode === 'HALF' && (
+                <div className="space-y-4 p-4 border rounded-md bg-slate-50">
+                  <div className="text-sm font-medium text-slate-700">Half Day Time Range * (Max 2 hours)</div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Start Time</Label>
+                      <input
+                        type="time"
+                        value={halfDayStartTime}
+                        onChange={(e) => setHalfDayStartTime(e.target.value)}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>End Time</Label>
+                      <input
+                        type="time"
+                        value={halfDayEndTime}
+                        onChange={(e) => setHalfDayEndTime(e.target.value)}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Select the time range for your half day leave. Maximum duration is 2 hours (e.g., 08:30 - 10:30).
+                  </p>
+                </div>
+              )}
+              
+              {/* Short Leave Time Selection */}
+              {leaveMode === 'SHORT' && (
+                <div className="space-y-4 p-4 border rounded-md bg-slate-50">
+                  <div className="text-sm font-medium text-slate-700">Short Leave Time Range * (Max 2 hours)</div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Start Time</Label>
+                      <input
+                        type="time"
+                        value={startTime}
+                        onChange={(e) => setStartTime(e.target.value)}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>End Time</Label>
+                      <input
+                        type="time"
+                        value={endTime}
+                        onChange={(e) => setEndTime(e.target.value)}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Short leave is limited to a maximum of 2 hours. Please select a time range within working hours (8:30 AM - 5:00 PM).
+                  </p>
+                </div>
+              )}
+              
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Start Date *</Label>
@@ -760,8 +873,8 @@ export default function LeavesPage() {
               <p>
                 <strong>Mode:</strong>{" "}
                 {selectedRequest.leave_mode === 'FULL' ? 'Full Day' :
-                  selectedRequest.leave_mode === 'HALF' ? 'Half Day' :
-                    selectedRequest.leave_mode === 'SHORT' ? 'Short Leave' : selectedRequest.leave_mode}
+                  selectedRequest.leave_mode === 'HALF' ? `Half Day (${selectedRequest.start_time || 'N/A'} - ${selectedRequest.end_time || 'N/A'})` :
+                    selectedRequest.leave_mode === 'SHORT' ? `Short Leave (${selectedRequest.start_time || 'N/A'} - ${selectedRequest.end_time || 'N/A'})` : selectedRequest.leave_mode}
               </p>
               <p>
                 <strong>Status:</strong>{" "}
