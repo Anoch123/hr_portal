@@ -293,8 +293,6 @@ export default function LeavesPage() {
     setEndDate(undefined)
     setLeaveMode('FULL')
     setReason('Personal Leave')
-    setHalfDayStartTime('08:30')
-    setHalfDayEndTime('12:30')
     setStartTime('09:00')
     setEndTime('11:00')
     setError("")
