@@ -23,6 +23,14 @@ export function formatDate(date: Date | string | null | undefined, formatStr: st
   return format(d, formatStr)
 }
 
+// Format date and time for display
+export function formatDateTime(date: Date | string | null | undefined, formatStr: string = 'MMM dd, yyyy HH:mm'): string {
+  if (!date) return 'N/A'
+  const d = typeof date === 'string' ? parseISO(date) : date
+  if (isNaN(d.getTime())) return 'N/A'
+  return format(d, formatStr)
+}
+
 // Generate a random password
 export function generatePassword(length: number = 12): string {
   const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*'

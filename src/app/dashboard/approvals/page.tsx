@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { formatDate } from "@/lib/utils"
+import { formatDate, formatDateTime } from "@/lib/utils"
 import { Check, X, Eye, Loader2, Search } from "lucide-react"
 
 interface User {
@@ -240,7 +240,7 @@ export default function ApprovalsPage() {
               <TableCell className="max-w-[150px] truncate" title={request.reason || ''}>
                 {request.reason || "-"}
               </TableCell>
-              <TableCell>{formatDate(request.createdAt)}</TableCell>
+              <TableCell>{formatDateTime(request.createdAt)}</TableCell>
               <TableCell>
                 <div className="flex items-center gap-2">
                   <Button
@@ -479,6 +479,12 @@ export default function ApprovalsPage() {
                   <Label className="text-muted-foreground">End Date</Label>
                   <p className="font-medium">
                     {formatDate(selectedRequest.endDate)}
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Submitted</Label>
+                  <p className="font-medium">
+                    {formatDateTime(selectedRequest.createdAt)}
                   </p>
                 </div>
               </div>

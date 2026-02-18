@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 // import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Download, FileText, Users, Calendar, BarChart3, Clock } from "lucide-react"
+import { formatDateTime } from "@/lib/utils"
 
 type ReportType = 'leave-usage' | 'employee-summary' | 'department-summary' | 'pending-approvals' | 'monthly-trends'
 
@@ -362,7 +363,7 @@ export default function ReportsPage() {
                   <TableCell className="max-w-[150px] truncate" title={request.reason || ''}>
                     {request.reason || '-'}
                   </TableCell>
-                  <TableCell>{new Date(request.requestedAt).toLocaleDateString()}</TableCell>
+                  <TableCell>{formatDateTime(request.requestedAt)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

@@ -32,7 +32,7 @@ import {
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { DatePicker } from "@/components/ui/date-picker"
-import { formatDate, getStatusColor } from "@/lib/utils"
+import { formatDate, formatDateTime, getStatusColor } from "@/lib/utils"
 import { Plus, X, Eye } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
@@ -333,7 +333,7 @@ export default function LeavesPage() {
                       )}
                     </div>
                   </TableCell>
-                  <TableCell>{formatDate(request.created_at)}</TableCell>
+                  <TableCell>{formatDateTime(request.created_at)}</TableCell>
                   <TableCell>
                     <div className="flex gap-2 flex-wrap">
                       <Button
@@ -420,7 +420,7 @@ export default function LeavesPage() {
                   </div>
                   <div>
                     <span className="text-muted-foreground">Submitted:</span>{" "}
-                    {formatDate(request.created_at)}
+                    {formatDateTime(request.created_at)}
                   </div>
                 </div>
                 {request.reason && (
@@ -794,6 +794,9 @@ export default function LeavesPage() {
                     No Pay
                   </Badge>
                 )}
+              </p>
+              <p>
+                <strong>Submitted:</strong> {formatDateTime(selectedRequest.created_at)}
               </p>
               {selectedRequest.reason && (
                 <div className="p-3 bg-muted rounded-md">
