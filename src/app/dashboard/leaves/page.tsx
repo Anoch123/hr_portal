@@ -63,6 +63,7 @@ interface LeaveRequest {
   reason: string | null
   status: string
   leave_mode: 'FULL' | 'HALF' | 'SHORT'
+  is_no_pay: boolean
   created_at: string
   rejection_reason: string | null
   leaveType: LeaveType
@@ -88,6 +89,8 @@ export default function LeavesPage() {
   const [endDate, setEndDate] = useState<Date | undefined>()
   const [leaveMode, setLeaveMode] = useState<'FULL' | 'HALF' | 'SHORT'>('FULL')
   const [reason, setReason] = useState<'Exam Leave'| 'Study Leave'| 'Religious Holiday'| 'Sick Leave'| 'Medical Appointment'| 'Hospitalization'| 'Funeral'| 'Personal Leave'>('Personal Leave')
+  const [isNoPay, setIsNoPay] = useState(false)
+  const [showNoPayOption, setShowNoPayOption] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState("")
 
@@ -147,6 +150,10 @@ export default function LeavesPage() {
         }
       })
       setAvailableLeaveTypeIds(availableIds)
+      
+      // Show no-pay option if all leave types have zero balance
+      // But still allow leave requests as no-pay
+      setShowNoPayOption(availableIds.size === 0 && data.length > 0)
     } catch (err) {
       console.error("Error fetching leave types:", err)
     }
@@ -209,12 +216,19 @@ export default function LeavesPage() {
           endDate: formatLocalDate(endDate),
           leaveMode,
           reason,
+          isNoPay,
         }),
       })
 
       const data = await res.json()
       if (!res.ok) {
-        setError(data.error || "Failed to submit request")
+        // Check if the error is about insufficient balance
+        if (data.insufficientBalance) {
+          setShowNoPayOption(true)
+          setError(data.error + " Please check the 'No Pay' option to submit as unpaid leave.")
+        } else {
+          setError(data.error || "Failed to submit request")
+        }
         return
       }
 
@@ -261,6 +275,8 @@ export default function LeavesPage() {
     setEndDate(undefined)
     setLeaveMode('FULL')
     setReason('Personal Leave')
+    setIsNoPay(false)
+    setShowNoPayOption(false)
     setError("")
   }
 
@@ -302,9 +318,16 @@ export default function LeavesPage() {
                   <TableCell>{formatDate(request.end_date)}</TableCell>
                   <TableCell>{request.total_days}</TableCell>
                   <TableCell>
-                    <Badge className={request.status}>
-                      {request.status}
-                    </Badge>
+                    <div className="flex flex-col gap-1">
+                      <Badge className={request.status}>
+                        {request.status}
+                      </Badge>
+                      {request.is_no_pay && (
+                        <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">
+                          No Pay
+                        </Badge>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell>{formatDate(request.created_at)}</TableCell>
                   <TableCell>
@@ -369,9 +392,16 @@ export default function LeavesPage() {
                           request.leave_mode === 'SHORT' ? 'Short Leave' : request.leave_mode}
                     </p>
                   </div>
-                  <Badge className={request.status}>
-                    {request.status}
-                  </Badge>
+                  <div className="flex flex-col gap-1 items-end">
+                    <Badge className={request.status}>
+                      {request.status}
+                    </Badge>
+                    {request.is_no_pay && (
+                      <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">
+                        No Pay
+                      </Badge>
+                    )}
+                  </div>
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-sm mb-3">
                   <div>
@@ -471,6 +501,10 @@ export default function LeavesPage() {
                         if (isOnProbation && !type.name.toLowerCase().includes("probation")) {
                           return false
                         }
+                        // If no balance available for any type, show all types (for no-pay)
+                        if (availableLeaveTypeIds.size === 0) {
+                          return true
+                        }
                         // Filter by available balance
                         return availableLeaveTypeIds.has(type.id)
                       })
@@ -481,12 +515,27 @@ export default function LeavesPage() {
                       ))}
                   </SelectContent>
                 </Select>
-                {availableLeaveTypeIds.size === 0 && (
-                  <p className="text-sm text-muted-foreground">
-                    No leave types with available balance. Contact HR to set up your leave entitlements.
+                {availableLeaveTypeIds.size === 0 && leaveTypes.length > 0 && (
+                  <p className="text-sm text-amber-600">
+                    No leave balance available. Your leave request will be submitted as unpaid leave.
                   </p>
                 )}
               </div>
+              {/* No Pay Option - shown when balance is insufficient or all balances are zero */}
+              {(showNoPayOption || availableLeaveTypeIds.size === 0) && leaveTypes.length > 0 && (
+                <div className="flex items-center space-x-2 p-3 bg-amber-50 border border-amber-200 rounded-md">
+                  <input
+                    type="checkbox"
+                    id="isNoPay"
+                    checked={isNoPay}
+                    onChange={(e) => setIsNoPay(e.target.checked)}
+                    className="h-4 w-4 rounded border-amber-300 text-amber-600 focus:ring-amber-500"
+                  />
+                  <Label htmlFor="isNoPay" className="text-sm text-amber-800 cursor-pointer">
+                    Submit as No Pay (Unpaid Leave)
+                  </Label>
+                </div>
+              )}
               <div className="space-y-2">
                 <Label>Leave Mode *</Label>
                 {isOnProbation ? (

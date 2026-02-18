@@ -93,24 +93,27 @@ export async function POST(
     }
 
     // Update leave balance - add to used_days (balance is now updated only on approval)
-    const currentYear = new Date().getFullYear()
-    
-    const { data: balance } = await supabaseAdmin
-      .from("leave_balances")
-      .select("*")
-      .eq("user_id", leaveRequest.user_id)
-      .eq("leave_type_id", leaveRequest.leave_type_id)
-      .eq("year", currentYear)
-      .single()
-
-    if (balance) {
-      await supabaseAdmin
+    // Skip balance update for no-pay leave requests
+    if (!leaveRequest.is_no_pay) {
+      const currentYear = new Date().getFullYear()
+      
+      const { data: balance } = await supabaseAdmin
         .from("leave_balances")
-        .update({
-          used_days: (balance.used_days || 0) + leaveRequest.total_days,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", balance.id)
+        .select("*")
+        .eq("user_id", leaveRequest.user_id)
+        .eq("leave_type_id", leaveRequest.leave_type_id)
+        .eq("year", currentYear)
+        .single()
+
+      if (balance) {
+        await supabaseAdmin
+          .from("leave_balances")
+          .update({
+            used_days: (balance.used_days || 0) + leaveRequest.total_days,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", balance.id)
+      }
     }
 
     // Create history entry

@@ -84,6 +84,7 @@ export async function GET(request: NextRequest) {
         totalDays: request.total_days,
         reason: request.reason,
         status: request.status,
+        isNoPay: request.is_no_pay || false,
         createdAt: request.created_at,
         user: request.user ? {
           id: request.user.id,

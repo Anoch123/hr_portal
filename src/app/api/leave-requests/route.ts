@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "You do not have permission to create leave requests." }, { status: 403 })
     }
     const body = await request.json()
-    const { leaveTypeId, startDate, endDate, reason, leaveMode = 'FULL' } = body
+    const { leaveTypeId, startDate, endDate, reason, leaveMode = 'FULL', isNoPay = false } = body
 
     // Validate required fields
     if (!leaveTypeId || !startDate || !endDate) {
@@ -210,20 +210,25 @@ export async function POST(request: NextRequest) {
       .eq('year', currentYear)
       .single()
 
-    if (balanceError || !balance) {
-      return NextResponse.json(
-        { error: "No leave balance found for this leave type" },
-        { status: 400 }
-      )
+    // Available days = total_days - used_days (pending_days no longer used since balance updates only on approval)
+    let availableDays = 0
+    if (balance && !balanceError) {
+      availableDays = balance.total_days - balance.used_days
     }
 
-    // Available days = total_days - used_days (pending_days no longer used since balance updates only on approval)
-    const availableDays = balance.total_days - balance.used_days
+    // If no balance or insufficient balance, check if this is a no-pay request
     if (totalDays > availableDays) {
-      return NextResponse.json(
-        { error: `Insufficient leave balance. Available: ${availableDays} days` },
-        { status: 400 }
-      )
+      if (!isNoPay) {
+        return NextResponse.json(
+          { 
+            error: `Insufficient leave balance. Available: ${availableDays} days. You can submit this as a no-pay leave request.`,
+            insufficientBalance: true,
+            availableDays 
+          },
+          { status: 400 }
+        )
+      }
+      // If isNoPay is true, allow the request to proceed without balance check
     }
 
     // Check for overlapping requests
@@ -250,7 +255,8 @@ export async function POST(request: NextRequest) {
       endDate,
       totalDays,
       reason,
-      leaveMode
+      leaveMode,
+      isNoPay
     )
 
     if (createError) throw createError

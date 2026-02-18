@@ -51,7 +51,8 @@ export async function createLeaveRequest(
   endDate: string,
   totalDays: number,
   reason?: string,
-  leaveMode: 'FULL' | 'HALF' | 'SHORT' = 'FULL'
+  leaveMode: 'FULL' | 'HALF' | 'SHORT' = 'FULL',
+  isNoPay: boolean = false
 ) {
   try {
     const { data, error } = await supabaseAdmin
@@ -65,6 +66,7 @@ export async function createLeaveRequest(
         reason: reason || null,
         status: 'PENDING',
         leave_mode: leaveMode,
+        is_no_pay: isNoPay,
       })
       .select()
       .single()
@@ -72,7 +74,10 @@ export async function createLeaveRequest(
     if (error) throw error
 
     // Log to history
-    await addLeaveHistory(userId, leaveTypeId, 'CREATED', null, 'PENDING', userId, 'Leave request created')
+    const historyDetails = isNoPay 
+      ? 'Leave request created (No Pay)' 
+      : 'Leave request created'
+    await addLeaveHistory(userId, leaveTypeId, 'CREATED', null, 'PENDING', userId, historyDetails)
 
     return { leaveRequest: data as LeaveRequest, error: null }
   } catch (error) {

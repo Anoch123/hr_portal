@@ -49,6 +49,7 @@ interface LeaveRequest {
   totalDays: number
   reason: string | null
   status: string
+  isNoPay: boolean
   createdAt: string
   user: User
   leaveType: LeaveType
@@ -220,7 +221,16 @@ export default function ApprovalsPage() {
                 {request.user.firstName} {request.user.lastName}
               </TableCell>
               <TableCell>{request.user.department || "-"}</TableCell>
-              <TableCell>{request.leaveType.name}</TableCell>
+              <TableCell>
+                <div className="flex flex-col gap-1">
+                  {request.leaveType.name}
+                  {request.isNoPay && (
+                    <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100 w-fit text-xs">
+                      No Pay
+                    </Badge>
+                  )}
+                </div>
+              </TableCell>
               <TableCell>
                 {formatDate(request.startDate)} - {formatDate(request.endDate)}
               </TableCell>
@@ -425,7 +435,14 @@ export default function ApprovalsPage() {
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Leave Type</Label>
-                  <p className="font-medium">{selectedRequest.leaveType.name}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium">{selectedRequest.leaveType.name}</p>
+                    {selectedRequest.isNoPay && (
+                      <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100 text-xs">
+                        No Pay
+                      </Badge>
+                    )}
+                  </div>
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Status</Label>
