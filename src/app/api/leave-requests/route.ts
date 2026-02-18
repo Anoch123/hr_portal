@@ -129,6 +129,29 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Check if user already has a pending leave request
+    const { data: pendingRequests, error: pendingError } = await supabaseAdmin
+      .from('leave_requests')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('status', 'PENDING')
+      .limit(1)
+
+    if (pendingError) {
+      console.error("Error checking pending requests:", pendingError)
+      return NextResponse.json(
+        { error: "Failed to check existing pending requests" },
+        { status: 500 }
+      )
+    }
+
+    if (pendingRequests && pendingRequests.length > 0) {
+      return NextResponse.json(
+        { error: "You already have a pending leave request. Please wait for it to be processed before submitting a new one." },
+        { status: 400 }
+      )
+    }
+
     const start = new Date(startDate)
     const end = new Date(endDate)
 
