@@ -233,23 +233,23 @@ export default function ACLPage() {
   const groupedPermissions = groupPermissionsByModule(permissions)
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Shield className="h-8 w-8" />
+          <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
+            <Shield className="h-6 w-6 sm:h-8 sm:w-8" />
             Access Control
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground text-sm sm:text-base">
             Manage permissions and role-based access control
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button onClick={() => setAssignDialogOpen(true)}>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Button onClick={() => setAssignDialogOpen(true)} className="w-full sm:w-auto">
             <Users className="w-4 h-4 mr-2" />
             Assign Permission
           </Button>
-          <Button onClick={() => setDialogOpen(true)}>
+          <Button onClick={() => setDialogOpen(true)} className="w-full sm:w-auto">
             <Plus className="w-4 h-4 mr-2" />
             Add Permission
           </Button>
@@ -259,35 +259,35 @@ export default function ACLPage() {
       <div className="space-y-6">
         {/* Role Permissions */}
         <div>
-          <h2 className="text-xl font-semibold mb-4">Role Permissions</h2>
+          <h2 className="text-lg sm:text-xl font-semibold mb-4">Role Permissions</h2>
           <div className="grid gap-4">
             {roles.map((role) => (
               <Card key={role}>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex flex-col sm:flex-row sm:items-center gap-2">
                     <Badge variant={getRoleColor(role)}>{role}</Badge>
-                    <span className="text-lg">
+                    <span className="text-base sm:text-lg">
                       {rolePermissions[role]?.length || 0} permissions
                     </span>
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="text-sm">
                     Permissions assigned to the {role.toLowerCase()} role
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   {rolePermissions[role]?.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                       {rolePermissions[role].map((rp) => (
                         <div key={rp.id} className="flex items-center justify-between p-2 border rounded">
-                          <div>
-                            <div className="font-medium text-sm">{rp.permission.name}</div>
-                            <div className="text-xs text-muted-foreground">{rp.permission.description}</div>
+                          <div className="flex-1 min-w-0 mr-2">
+                            <div className="font-medium text-sm truncate">{rp.permission.name}</div>
+                            <div className="text-xs text-muted-foreground truncate">{rp.permission.description}</div>
                           </div>
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => handleRemovePermission(role, rp.permission.id)}
-                            className="text-destructive hover:text-destructive"
+                            className="text-destructive hover:text-destructive flex-shrink-0"
                           >
                             <X className="w-3 h-3" />
                           </Button>
@@ -295,7 +295,7 @@ export default function ACLPage() {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-muted-foreground">No permissions assigned</p>
+                    <p className="text-muted-foreground text-sm">No permissions assigned</p>
                   )}
                 </CardContent>
               </Card>
@@ -305,61 +305,99 @@ export default function ACLPage() {
 
         {/* All Permissions */}
         <div>
-          <h2 className="text-xl font-semibold mb-4">All Permissions</h2>
+          <h2 className="text-lg sm:text-xl font-semibold mb-4">All Permissions</h2>
           <div className="grid gap-4">
             {Object.entries(groupedPermissions).map(([module, modulePermissions]) => (
               <Card key={module}>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Settings className="h-5 w-5" />
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                    <Settings className="h-4 w-4 sm:h-5 sm:w-5" />
                     {module.charAt(0).toUpperCase() + module.slice(1)} Module
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="text-sm">
                     Permissions for the {module} module
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Permission</TableHead>
-                        <TableHead>Description</TableHead>
-                        <TableHead>Action</TableHead>
-                        <TableHead>Assigned Roles</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {modulePermissions.map((permission) => {
-                        const assignedRoles = Object.entries(rolePermissions)
-                          .filter(([, rps]) =>
-                            rps.some(rp => rp.permission.id === permission.id)
-                          )
-                          .map(([role]) => role)
-
-                        return (
-                          <TableRow key={permission.id}>
-                            <TableCell className="font-medium">{permission.name}</TableCell>
-                            <TableCell>{permission.description || "-"}</TableCell>
-                            <TableCell>
-                              <Badge variant="outline">{permission.action}</Badge>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex flex-wrap gap-1">
-                                {assignedRoles.map((role) => (
-                                  <Badge key={role} variant={getRoleColor(role)} className="text-xs">
-                                    {role}
-                                  </Badge>
-                                ))}
-                                {assignedRoles.length === 0 && (
-                                  <span className="text-muted-foreground text-sm">None</span>
-                                )}
-                              </div>
-                            </TableCell>
-                          </TableRow>
+                  {/* Mobile Card View */}
+                  <div className="sm:hidden space-y-3">
+                    {modulePermissions.map((permission) => {
+                      const assignedRoles = Object.entries(rolePermissions)
+                        .filter(([, rps]) =>
+                          rps.some(rp => rp.permission.id === permission.id)
                         )
-                      })}
-                    </TableBody>
-                  </Table>
+                        .map(([role]) => role)
+
+                      return (
+                        <Card key={permission.id} className="p-3">
+                          <div className="space-y-2">
+                            <div className="flex items-start justify-between">
+                              <div className="font-medium">{permission.name}</div>
+                              <Badge variant="outline" className="text-xs">{permission.action}</Badge>
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {permission.description || "-"}
+                            </div>
+                            <div className="flex flex-wrap gap-1">
+                              {assignedRoles.map((role) => (
+                                <Badge key={role} variant={getRoleColor(role)} className="text-xs">
+                                  {role}
+                                </Badge>
+                              ))}
+                              {assignedRoles.length === 0 && (
+                                <span className="text-muted-foreground text-xs">No roles assigned</span>
+                              )}
+                            </div>
+                          </div>
+                        </Card>
+                      )
+                    })}
+                  </div>
+
+                  {/* Desktop Table View */}
+                  <div className="hidden sm:block overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Permission</TableHead>
+                          <TableHead>Description</TableHead>
+                          <TableHead>Action</TableHead>
+                          <TableHead>Assigned Roles</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {modulePermissions.map((permission) => {
+                          const assignedRoles = Object.entries(rolePermissions)
+                            .filter(([, rps]) =>
+                              rps.some(rp => rp.permission.id === permission.id)
+                            )
+                            .map(([role]) => role)
+
+                          return (
+                            <TableRow key={permission.id}>
+                              <TableCell className="font-medium">{permission.name}</TableCell>
+                              <TableCell>{permission.description || "-"}</TableCell>
+                              <TableCell>
+                                <Badge variant="outline">{permission.action}</Badge>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex flex-wrap gap-1">
+                                  {assignedRoles.map((role) => (
+                                    <Badge key={role} variant={getRoleColor(role)} className="text-xs">
+                                      {role}
+                                    </Badge>
+                                  ))}
+                                  {assignedRoles.length === 0 && (
+                                    <span className="text-muted-foreground text-sm">None</span>
+                                  )}
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          )
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
                 </CardContent>
               </Card>
             ))}
@@ -369,7 +407,7 @@ export default function ACLPage() {
 
       {/* Add Permission Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
+        <DialogContent className="w-[95vw] max-w-md">
           <DialogHeader>
             <DialogTitle>Add Permission</DialogTitle>
             <DialogDescription>
@@ -388,25 +426,27 @@ export default function ACLPage() {
                   required
                 />
               </div>
-              <div>
-                <Label htmlFor="module">Module *</Label>
-                <Input
-                  id="module"
-                  value={formData.module}
-                  onChange={(e) => setFormData({ ...formData, module: e.target.value })}
-                  placeholder="e.g., employees"
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="action">Action *</Label>
-                <Input
-                  id="action"
-                  value={formData.action}
-                  onChange={(e) => setFormData({ ...formData, action: e.target.value })}
-                  placeholder="e.g., create"
-                  required
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="module">Module *</Label>
+                  <Input
+                    id="module"
+                    value={formData.module}
+                    onChange={(e) => setFormData({ ...formData, module: e.target.value })}
+                    placeholder="e.g., employees"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="action">Action *</Label>
+                  <Input
+                    id="action"
+                    value={formData.action}
+                    onChange={(e) => setFormData({ ...formData, action: e.target.value })}
+                    placeholder="e.g., create"
+                    required
+                  />
+                </div>
               </div>
               <div>
                 <Label htmlFor="description">Description</Label>
@@ -419,7 +459,7 @@ export default function ACLPage() {
               </div>
               {error && <p className="text-sm text-destructive">{error}</p>}
             </div>
-            <DialogFooter className="mt-4">
+            <DialogFooter className="mt-4 flex-col sm:flex-row gap-2">
               <Button
                 type="button"
                 variant="outline"
@@ -427,10 +467,11 @@ export default function ACLPage() {
                   setDialogOpen(false)
                   resetForm()
                 }}
+                className="w-full sm:w-auto"
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={submitting}>
+              <Button type="submit" disabled={submitting} className="w-full sm:w-auto">
                 {submitting ? "Creating..." : "Create Permission"}
               </Button>
             </DialogFooter>
@@ -440,7 +481,7 @@ export default function ACLPage() {
 
       {/* Assign Permission Dialog */}
       <Dialog open={assignDialogOpen} onOpenChange={setAssignDialogOpen}>
-        <DialogContent>
+        <DialogContent className="w-[95vw] max-w-md">
           <DialogHeader>
             <DialogTitle>Assign Permission</DialogTitle>
             <DialogDescription>
@@ -487,7 +528,7 @@ export default function ACLPage() {
               </div>
               {error && <p className="text-sm text-destructive">{error}</p>}
             </div>
-            <DialogFooter className="mt-4">
+            <DialogFooter className="mt-4 flex-col sm:flex-row gap-2">
               <Button
                 type="button"
                 variant="outline"
@@ -495,10 +536,11 @@ export default function ACLPage() {
                   setAssignDialogOpen(false)
                   resetAssignForm()
                 }}
+                className="w-full sm:w-auto"
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={submitting}>
+              <Button type="submit" disabled={submitting} className="w-full sm:w-auto">
                 {submitting ? "Assigning..." : "Assign Permission"}
               </Button>
             </DialogFooter>

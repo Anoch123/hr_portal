@@ -78,7 +78,7 @@ const FormContent = ({ formData, setFormData, error }: FormContentProps) => (
         placeholder="Description of the leave type"
       />
     </div>
-    <div className="grid grid-cols-2 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div className="space-y-2">
         <Label>Default Days</Label>
         <Input
@@ -103,7 +103,7 @@ const FormContent = ({ formData, setFormData, error }: FormContentProps) => (
         />
       </div>
     </div>
-    <div className="flex items-center gap-6">
+    <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
       <label className="flex items-center gap-2 cursor-pointer">
         <input
           type="checkbox"
@@ -286,21 +286,21 @@ export default function LeaveTypesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Leave Types ({leaveTypes.length})</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold">Leave Types ({leaveTypes.length})</h1>
+          <p className="text-muted-foreground text-sm sm:text-base">
             Manage leave types and their configurations
           </p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="w-full sm:w-auto">
               <Plus className="h-4 w-4 mr-2" />
               Add Leave Type
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="w-[95vw] max-w-md">
             <DialogHeader>
               <DialogTitle>Add Leave Type</DialogTitle>
               <DialogDescription>
@@ -308,11 +308,11 @@ export default function LeaveTypesPage() {
               </DialogDescription>
             </DialogHeader>
             <FormContent formData={formData} setFormData={setFormData} error={error} />
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setDialogOpen(false)}>
+            <DialogFooter className="flex-col sm:flex-row gap-2">
+              <Button variant="outline" onClick={() => setDialogOpen(false)} className="w-full sm:w-auto">
                 Cancel
               </Button>
-              <Button onClick={handleCreate} disabled={submitting}>
+              <Button onClick={handleCreate} disabled={submitting} className="w-full sm:w-auto">
                 {submitting ? "Creating..." : "Create"}
               </Button>
             </DialogFooter>
@@ -321,12 +321,6 @@ export default function LeaveTypesPage() {
       </div>
 
       <Card>
-        {/* <CardHeader>
-          <CardTitle>Leave Types</CardTitle>
-          <CardDescription>
-            Configure different types of leave available to employees
-          </CardDescription>
-        </CardHeader> */}
         <CardContent>
           {loading ? (
             <p className="text-center py-4">Loading...</p>
@@ -335,84 +329,153 @@ export default function LeaveTypesPage() {
               No leave types found. Click &quot;Add Leave Type&quot; to create one.
             </p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Default Days</TableHead>
-                  <TableHead>Max Consecutive</TableHead>
-                  <TableHead>Paid</TableHead>
-                  <TableHead>Requires Approval</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <>
+              {/* Mobile Card View */}
+              <div className="sm:hidden space-y-3">
                 {leaveTypes.map((type) => (
-                  <TableRow key={type.id}>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium">{type.name}</p>
-                        {type.description && (
-                          <p className="text-sm text-muted-foreground">
-                            {type.description}
-                          </p>
-                        )}
+                  <Card key={type.id} className="p-4">
+                    <div className="space-y-3">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <div className="font-medium">{type.name}</div>
+                          {type.description && (
+                            <div className="text-sm text-muted-foreground">{type.description}</div>
+                          )}
+                        </div>
+                        <Badge
+                          variant={type.is_active ? "success" : "secondary"}
+                          className="text-xs"
+                        >
+                          {type.is_active ? "Active" : "Inactive"}
+                        </Badge>
                       </div>
-                    </TableCell>
-                    <TableCell>{type.default_days}</TableCell>
-                    <TableCell>
-                      {type.max_consecutive_days || "No limit"}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={type.is_paid ? "success" : "secondary"}>
-                        {type.is_paid ? "Yes" : "No"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={type.requires_approval ? "info" : "secondary"}
-                      >
-                        {type.requires_approval ? "Yes" : "No"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={type.is_active ? "success" : "secondary"}
-                      >
-                        {type.is_active ? "Active" : "Inactive"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <span className="text-muted-foreground">Default Days: </span>
+                          <span>{type.default_days}</span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Max Consecutive: </span>
+                          <span>{type.max_consecutive_days || "No limit"}</span>
+                        </div>
+                        <div>
+                          <Badge variant={type.is_paid ? "success" : "secondary"} className="text-xs">
+                            {type.is_paid ? "Paid" : "Unpaid"}
+                          </Badge>
+                        </div>
+                        <div>
+                          <Badge variant={type.requires_approval ? "info" : "secondary"} className="text-xs">
+                            {type.requires_approval ? "Approval Required" : "No Approval"}
+                          </Badge>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 pt-2 border-t">
                         <Button
-                          variant="ghost"
+                          variant="outline"
                           size="sm"
                           onClick={() => openEditDialog(type)}
+                          className="flex-1"
                         >
-                          <Edit className="h-4 w-4" />
+                          <Edit className="h-4 w-4 mr-1" />
+                          Edit
                         </Button>
                         <Button
-                          variant="ghost"
+                          variant="outline"
                           size="sm"
-                          className="text-red-600 hover:text-red-700"
+                          className="text-red-600 hover:text-red-700 flex-1"
                           onClick={() => handleDelete(type.id)}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          Delete
                         </Button>
                       </div>
-                    </TableCell>
-                  </TableRow>
+                    </div>
+                  </Card>
                 ))}
-              </TableBody>
-            </Table>
+              </div>
+
+              {/* Desktop Table View */}
+              <div className="hidden sm:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Default Days</TableHead>
+                      <TableHead>Max Consecutive</TableHead>
+                      <TableHead>Paid</TableHead>
+                      <TableHead>Requires Approval</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {leaveTypes.map((type) => (
+                      <TableRow key={type.id}>
+                        <TableCell>
+                          <div>
+                            <p className="font-medium">{type.name}</p>
+                            {type.description && (
+                              <p className="text-sm text-muted-foreground">
+                                {type.description}
+                              </p>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>{type.default_days}</TableCell>
+                        <TableCell>
+                          {type.max_consecutive_days || "No limit"}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={type.is_paid ? "success" : "secondary"}>
+                            {type.is_paid ? "Yes" : "No"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={type.requires_approval ? "info" : "secondary"}
+                          >
+                            {type.requires_approval ? "Yes" : "No"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={type.is_active ? "success" : "secondary"}
+                          >
+                            {type.is_active ? "Active" : "Inactive"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => openEditDialog(type)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-red-600 hover:text-red-700"
+                              onClick={() => handleDelete(type.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent>
+        <DialogContent className="w-[95vw] max-w-md">
           <DialogHeader>
             <DialogTitle>Edit Leave Type</DialogTitle>
             <DialogDescription>
@@ -420,11 +483,11 @@ export default function LeaveTypesPage() {
             </DialogDescription>
           </DialogHeader>
           <FormContent formData={formData} setFormData={setFormData} error={error} />
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)} className="w-full sm:w-auto">
               Cancel
             </Button>
-            <Button onClick={handleUpdate} disabled={submitting}>
+            <Button onClick={handleUpdate} disabled={submitting} className="w-full sm:w-auto">
               {submitting ? "Saving..." : "Save Changes"}
             </Button>
           </DialogFooter>

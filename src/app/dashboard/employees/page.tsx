@@ -596,42 +596,17 @@ export default function EmployeesPage() {
   }
 
   const renderEmployeeTable = (employeeList: Employee[]) => (
-    <div className="overflow-x-auto">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="min-w-[150px]">Name</TableHead>
-            <TableHead className="min-w-[100px]">Role</TableHead>
-            <TableHead className="min-w-[120px]">Department</TableHead>
-            <TableHead className="min-w-[100px]">Leave Balance</TableHead>
-            <TableHead className="min-w-[80px]">Status</TableHead>
-            <TableHead className="min-w-[100px]">Probation</TableHead>
-            <TableHead className="min-w-[150px]">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {employeeList.map((employee) => (
-            <TableRow key={employee.id}>
-              <TableCell className="font-medium">
-                <div className="flex flex-col">
-                  <span>{employee.first_name} {employee.last_name}</span>
-                  <span className="text-xs text-muted-foreground">{employee.email}</span>
+    <>
+      {/* Mobile Card View */}
+      <div className="sm:hidden space-y-3">
+        {employeeList.map((employee) => (
+          <Card key={employee.id} className="p-4">
+            <div className="space-y-3">
+              <div className="flex items-start justify-between">
+                <div>
+                  <div className="font-medium">{employee.first_name} {employee.last_name}</div>
+                  <div className="text-xs text-muted-foreground">{employee.email}</div>
                 </div>
-              </TableCell>
-              <TableCell>
-                <Badge variant="outline" className="text-xs">
-                  {formatRole(employee.role)}
-                </Badge>
-              </TableCell>
-              <TableCell className="text-sm">{employee.department?.name || "-"}</TableCell>
-              <TableCell className="text-sm">
-                {(() => {
-                  const balances = employeeBalancesMap[employee.id] || []
-                  const totalAvailable = balances.reduce((sum, b) => sum + (b.total_days + b.carried_over - b.used_days), 0)
-                  return totalAvailable > 0 ? totalAvailable.toFixed(1) : "-"
-                })()}
-              </TableCell>
-              <TableCell>
                 <Badge
                   variant={
                     employee.is_active
@@ -648,79 +623,204 @@ export default function EmployeesPage() {
                     ? "Resigned"
                     : "Terminated"}
                 </Badge>
-              </TableCell>
-              <TableCell>
-                {employee.is_on_probation ? (
-                  <Badge variant="destructive" className="text-xs">On Probation</Badge>
-                ) : (
-                  <span className="text-muted-foreground">-</span>
-                )}
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center gap-1 flex-wrap">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => openEditDialog(employee)}
-                    className="h-8 w-8 p-0"
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => openBalanceDialog(employee)}
-                    className="h-8 w-8 p-0"
-                  >
-                    <Calendar className="h-4 w-4" />
-                  </Button>
-                  {employee.is_active && employee.role !== "ADMIN" && (
-                    <>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-orange-600 hover:text-orange-700 h-8 w-8 p-0"
-                        onClick={() => openResignDialog(employee)}
-                      >
-                        <UserMinus className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-red-600 hover:text-red-700 h-8 w-8 p-0"
-                        onClick={() => handleDeactivate(employee.id)}
-                      >
-                        <UserX className="h-4 w-4" />
-                      </Button>
-                    </>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div>
+                  <span className="text-muted-foreground">Role: </span>
+                  <Badge variant="outline" className="text-xs">
+                    {formatRole(employee.role)}
+                  </Badge>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Dept: </span>
+                  <span>{employee.department?.name || "-"}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Balance: </span>
+                  <span>{(() => {
+                    const balances = employeeBalancesMap[employee.id] || []
+                    const totalAvailable = balances.reduce((sum, b) => sum + (b.total_days + b.carried_over - b.used_days), 0)
+                    return totalAvailable > 0 ? totalAvailable.toFixed(1) : "-"
+                  })()}</span>
+                </div>
+                <div>
+                  {employee.is_on_probation && (
+                    <Badge variant="destructive" className="text-xs">On Probation</Badge>
                   )}
                 </div>
-              </TableCell>
+              </div>
+              <div className="flex items-center gap-2 pt-2 border-t">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => openEditDialog(employee)}
+                  className="flex-1"
+                >
+                  <Edit className="h-4 w-4 mr-1" />
+                  Edit
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => openBalanceDialog(employee)}
+                  className="flex-1"
+                >
+                  <Calendar className="h-4 w-4 mr-1" />
+                  Balance
+                </Button>
+                {employee.is_active && employee.role !== "ADMIN" && (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-orange-600 hover:text-orange-700"
+                      onClick={() => openResignDialog(employee)}
+                    >
+                      <UserMinus className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-red-600 hover:text-red-700"
+                      onClick={() => handleDeactivate(employee.id)}
+                    >
+                      <UserX className="h-4 w-4" />
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+      
+      {/* Desktop Table View */}
+      <div className="hidden sm:block overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="min-w-[150px]">Name</TableHead>
+              <TableHead className="min-w-[100px]">Role</TableHead>
+              <TableHead className="min-w-[120px]">Department</TableHead>
+              <TableHead className="min-w-[100px]">Leave Balance</TableHead>
+              <TableHead className="min-w-[80px]">Status</TableHead>
+              <TableHead className="min-w-[100px]">Probation</TableHead>
+              <TableHead className="min-w-[150px]">Actions</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+          </TableHeader>
+          <TableBody>
+            {employeeList.map((employee) => (
+              <TableRow key={employee.id}>
+                <TableCell className="font-medium">
+                  <div className="flex flex-col">
+                    <span>{employee.first_name} {employee.last_name}</span>
+                    <span className="text-xs text-muted-foreground">{employee.email}</span>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Badge variant="outline" className="text-xs">
+                    {formatRole(employee.role)}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-sm">{employee.department?.name || "-"}</TableCell>
+                <TableCell className="text-sm">
+                  {(() => {
+                    const balances = employeeBalancesMap[employee.id] || []
+                    const totalAvailable = balances.reduce((sum, b) => sum + (b.total_days + b.carried_over - b.used_days), 0)
+                    return totalAvailable > 0 ? totalAvailable.toFixed(1) : "-"
+                  })()}
+                </TableCell>
+                <TableCell>
+                  <Badge
+                    variant={
+                      employee.is_active
+                        ? "default"
+                        : employee.resignation_date
+                        ? "outline"
+                        : "destructive"
+                    }
+                    className="text-xs"
+                  >
+                    {employee.is_active
+                      ? "Active"
+                      : employee.resignation_date
+                      ? "Resigned"
+                      : "Terminated"}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  {employee.is_on_probation ? (
+                    <Badge variant="destructive" className="text-xs">On Probation</Badge>
+                  ) : (
+                    <span className="text-muted-foreground">-</span>
+                  )}
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-1 flex-wrap">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => openEditDialog(employee)}
+                      className="h-8 w-8 p-0"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => openBalanceDialog(employee)}
+                      className="h-8 w-8 p-0"
+                    >
+                      <Calendar className="h-4 w-4" />
+                    </Button>
+                    {employee.is_active && employee.role !== "ADMIN" && (
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-orange-600 hover:text-orange-700 h-8 w-8 p-0"
+                          onClick={() => openResignDialog(employee)}
+                        >
+                          <UserMinus className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-600 hover:text-red-700 h-8 w-8 p-0"
+                          onClick={() => handleDeactivate(employee.id)}
+                        >
+                          <UserX className="h-4 w-4" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </>
   )
 
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Employee Management</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold">Employee Management</h1>
+          <p className="text-muted-foreground text-sm sm:text-base">
             Manage employee accounts and information
           </p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="w-full sm:w-auto">
               <Plus className="h-4 w-4 mr-2" />
               Add Employee
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md w-[95vw] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Add New Employee</DialogTitle>
               <DialogDescription>
@@ -733,7 +833,7 @@ export default function EmployeesPage() {
                   {error}
                 </div>
               )}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>First Name *</Label>
                   <Input
@@ -785,7 +885,7 @@ export default function EmployeesPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Department</Label>
                   <Select
@@ -818,7 +918,7 @@ export default function EmployeesPage() {
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label>NIC No</Label>
                   <Input
@@ -883,7 +983,7 @@ export default function EmployeesPage() {
                   <Label htmlFor="probation">On Probation</Label>
                 </div>
                 {formData.isOnProbation && (
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Probation Start Date</Label>
                       <Input
@@ -909,11 +1009,11 @@ export default function EmployeesPage() {
                 )}
               </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setDialogOpen(false)}>
+            <DialogFooter className="flex-col sm:flex-row gap-2">
+              <Button variant="outline" onClick={() => setDialogOpen(false)} className="w-full sm:w-auto">
                 Cancel
               </Button>
-              <Button onClick={handleCreate} disabled={submitting}>
+              <Button onClick={handleCreate} disabled={submitting} className="w-full sm:w-auto">
                 {submitting ? "Creating..." : "Create Employee"}
               </Button>
             </DialogFooter>
@@ -1066,7 +1166,7 @@ export default function EmployeesPage() {
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md w-[95vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Employee</DialogTitle>
             <DialogDescription>
@@ -1079,7 +1179,7 @@ export default function EmployeesPage() {
                 {error}
               </div>
             )}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>First Name *</Label>
                 <Input
@@ -1130,7 +1230,7 @@ export default function EmployeesPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Department</Label>
                 <Select
@@ -1164,7 +1264,7 @@ export default function EmployeesPage() {
                 />
               </div>
             </div>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label>NIC No</Label>
                 <Input
@@ -1236,7 +1336,7 @@ export default function EmployeesPage() {
                 <Label htmlFor="probation-edit">On Probation</Label>
               </div>
               {formData.isOnProbation && (
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Probation Start Date</Label>
                     <Input
@@ -1264,11 +1364,11 @@ export default function EmployeesPage() {
               )}
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)} className="w-full sm:w-auto">
               Cancel
             </Button>
-            <Button onClick={handleUpdate} disabled={submitting}>
+            <Button onClick={handleUpdate} disabled={submitting} className="w-full sm:w-auto">
               {submitting ? "Saving..." : "Save Changes"}
             </Button>
           </DialogFooter>
@@ -1277,7 +1377,7 @@ export default function EmployeesPage() {
 
       {/* Balance Dialog */}
       <Dialog open={balanceDialogOpen} onOpenChange={setBalanceDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl w-[95vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Manage Leave Balances</DialogTitle>
             <DialogDescription>
@@ -1294,9 +1394,9 @@ export default function EmployeesPage() {
 
             {/* Existing Balances */}
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                 <Label className="text-base font-medium">Current Balances</Label>
-                <Button onClick={startAddingBalance} size="sm">
+                <Button onClick={startAddingBalance} size="sm" className="w-full sm:w-auto">
                   <Plus className="h-4 w-4 mr-2" />
                   Add Balance
                 </Button>
@@ -1308,7 +1408,7 @@ export default function EmployeesPage() {
                 <div className="space-y-2">
                   {employeeBalances.map((balance) => (
                     <Card key={balance.id} className="p-3">
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                         <div className="flex-1">
                           <div className="font-medium">{balance.leaveType.name}</div>
                           <div className="text-sm text-muted-foreground">
@@ -1320,14 +1420,15 @@ export default function EmployeesPage() {
                             variant="outline"
                             size="sm"
                             onClick={() => startEditingBalance(balance)}
+                            className="flex-1 sm:flex-none"
                           >
-                            <Edit className="h-4 w-4 mr-2" />
-                            Edit
+                            <Edit className="h-4 w-4 sm:mr-2" />
+                            <span className="sm:inline">Edit</span>
                           </Button>
                           <Button
                             variant="outline"
                             size="sm"
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 flex-1 sm:flex-none"
                             onClick={() => handleDeleteBalance(balance.id)}
                             disabled={balance.used_days > 0}
                             title={balance.used_days > 0 ? "Cannot delete balance with used days" : "Delete balance"}
@@ -1346,16 +1447,16 @@ export default function EmployeesPage() {
             {(showAddForm || editingBalance) && (
               <Card className="p-4 border-dashed">
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                     <Label className="text-base font-medium">
                       {editingBalance ? "Edit Balance" : "Add New Balance"}
                     </Label>
-                    <Button variant="ghost" size="sm" onClick={cancelEditing}>
+                    <Button variant="ghost" size="sm" onClick={cancelEditing} className="w-full sm:w-auto">
                       Cancel
                     </Button>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Leave Type *</Label>
                       <Select
@@ -1392,7 +1493,7 @@ export default function EmployeesPage() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Total Days</Label>
                       <Input
@@ -1419,11 +1520,11 @@ export default function EmployeesPage() {
                     </div>
                   </div>
 
-                  <div className="flex justify-end gap-2">
-                    <Button variant="outline" onClick={cancelEditing}>
+                  <div className="flex flex-col sm:flex-row sm:justify-end gap-2">
+                    <Button variant="outline" onClick={cancelEditing} className="w-full sm:w-auto">
                       Cancel
                     </Button>
-                    <Button onClick={handleCreateBalance} disabled={submitting}>
+                    <Button onClick={handleCreateBalance} disabled={submitting} className="w-full sm:w-auto">
                       {submitting ? "Saving..." : editingBalance ? "Update Balance" : "Add Balance"}
                     </Button>
                   </div>
@@ -1433,7 +1534,7 @@ export default function EmployeesPage() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setBalanceDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setBalanceDialogOpen(false)} className="w-full sm:w-auto">
               Close
             </Button>
           </DialogFooter>
@@ -1442,7 +1543,7 @@ export default function EmployeesPage() {
 
       {/* Resign Dialog */}
       <Dialog open={resignDialogOpen} onOpenChange={setResignDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md w-[95vw]">
           <DialogHeader>
             <DialogTitle>Process Employee Resignation</DialogTitle>
             <DialogDescription>
@@ -1476,11 +1577,11 @@ export default function EmployeesPage() {
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setResignDialogOpen(false)}>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button variant="outline" onClick={() => setResignDialogOpen(false)} className="w-full sm:w-auto">
               Cancel
             </Button>
-            <Button onClick={handleResign} disabled={submitting}>
+            <Button onClick={handleResign} disabled={submitting} className="w-full sm:w-auto">
               {submitting ? "Processing..." : "Process Resignation"}
             </Button>
           </DialogFooter>

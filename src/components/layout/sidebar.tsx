@@ -169,8 +169,8 @@ export function Sidebar() {
 
   return (
     <>
-      {/* Mobile menu button */}
-      <div className="lg:hidden fixed top-4 left-4 z-50">
+      {/* Mobile menu button and header */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-background border-b px-4 py-3 flex items-center gap-3">
         <Button
           variant="outline"
           size="icon"
@@ -178,6 +178,12 @@ export function Sidebar() {
         >
           {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </Button>
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 bg-primary rounded-lg flex items-center justify-center">
+            <span className="text-white font-bold text-xs">LMS</span>
+          </div>
+          <span className="font-semibold text-base">SLM Leave Portal</span>
+        </div>
       </div>
 
       {/* Mobile sidebar */}
@@ -203,13 +209,16 @@ export function Sidebar() {
 
       {/* Profile Dialog */}
       <Dialog open={profileOpen} onOpenChange={handleProfileOpenChange}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="w-[95vw] sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Profile Information{userProfile.email_verified ? (
-              <Badge variant="default" className="text-xs bg-green-500 ml-2">Verified User</Badge>
-            ) : (
-              <Badge variant="destructive" className="text-xs">Unverified User</Badge>
-            )}</DialogTitle>
+            <DialogTitle className="flex flex-col sm:flex-row sm:items-center gap-2">
+              <span>Profile Information</span>
+              {userProfile.email_verified ? (
+                <Badge variant="default" className="text-xs bg-green-500">Verified User</Badge>
+              ) : (
+                <Badge variant="destructive" className="text-xs">Unverified User</Badge>
+              )}
+            </DialogTitle>
             <DialogDescription>Your account details</DialogDescription>
           </DialogHeader>
           {profileLoading ? (
@@ -218,7 +227,7 @@ export function Sidebar() {
             </div>
           ) : userProfile ? (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Full Name</p>
                   <p className="text-sm">{userProfile.first_name} {userProfile.last_name}</p>
@@ -227,7 +236,7 @@ export function Sidebar() {
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Email</p>
                   <div className="flex items-center gap-2">
-                    <p className="text-sm">{userProfile.email}</p>
+                    <p className="text-sm break-all">{userProfile.email}</p>
                   </div>
                 </div>
                 <div>

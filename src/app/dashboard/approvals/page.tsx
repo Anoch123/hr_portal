@@ -328,7 +328,7 @@ export default function ApprovalsPage() {
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle>Pending Approvals</CardTitle>
+                {/* <CardTitle>Pending Approvals</CardTitle> */}
                 <div className="relative w-64">
                   <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -357,7 +357,7 @@ export default function ApprovalsPage() {
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle>Approved Requests</CardTitle>
+                {/* <CardTitle>Approved Requests</CardTitle> */}
                 <div className="relative w-64">
                   <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -386,7 +386,7 @@ export default function ApprovalsPage() {
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle>Rejected Requests</CardTitle>
+                {/* <CardTitle>Rejected Requests</CardTitle> */}
                 <div className="relative w-64">
                   <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input

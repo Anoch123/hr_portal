@@ -181,25 +181,19 @@ export default function DepartmentsPage() {
   }
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Departments ({departments.length})</h1>
-          <p className="text-muted-foreground">Manage company departments</p>
+          <h1 className="text-2xl sm:text-3xl font-bold">Departments ({departments.length})</h1>
+          <p className="text-muted-foreground text-sm sm:text-base">Manage company departments</p>
         </div>
-        <Button onClick={() => setDialogOpen(true)}>
+        <Button onClick={() => setDialogOpen(true)} className="w-full sm:w-auto">
           <Plus className="w-4 h-4 mr-2" />
           Add Department
         </Button>
       </div>
 
       <Card>
-        {/* <CardHeader>
-          <CardTitle>Department List</CardTitle>
-          <CardDescription>
-            View and manage all departments in the organization
-          </CardDescription>
-        </CardHeader> */}
         <CardContent>
           <div className="flex items-center space-x-2 mb-4 mt-4">
             <div className="relative flex-1 max-w-sm">
@@ -213,56 +207,102 @@ export default function DepartmentsPage() {
             </div>
           </div>
 
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {departments.map((department) => (
-                <TableRow key={department.id}>
-                  <TableCell className="font-medium">{department.name}</TableCell>
-                  <TableCell>{department.description || "-"}</TableCell>
-                  <TableCell>{formatDate(department.created_at)}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openEditDialog(department)}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDelete(department)}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+          {/* Mobile Card View */}
+          <div className="sm:hidden space-y-3">
+            {departments.map((department) => (
+              <Card key={department.id} className="p-4">
+                <div className="space-y-3">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="font-medium">{department.name}</div>
+                      <div className="text-sm text-muted-foreground">{department.description || "-"}</div>
                     </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    Created: {formatDate(department.created_at)}
+                  </div>
+                  <div className="flex items-center gap-2 pt-2 border-t">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => openEditDialog(department)}
+                      className="flex-1"
+                    >
+                      <Edit className="w-4 h-4 mr-1" />
+                      Edit
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDelete(department)}
+                      className="text-destructive hover:text-destructive flex-1"
+                    >
+                      <Trash2 className="w-4 h-4 mr-1" />
+                      Delete
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            ))}
+            {departments.length === 0 && (
+              <div className="text-center py-8 text-muted-foreground">
+                No departments found
+              </div>
+            )}
+          </div>
 
-          {departments.length === 0 && (
-            <div className="text-center py-8 text-muted-foreground">
-              No departments found
-            </div>
-          )}
+          {/* Desktop Table View */}
+          <div className="hidden sm:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {departments.map((department) => (
+                  <TableRow key={department.id}>
+                    <TableCell className="font-medium">{department.name}</TableCell>
+                    <TableCell>{department.description || "-"}</TableCell>
+                    <TableCell>{formatDate(department.created_at)}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openEditDialog(department)}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDelete(department)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            {departments.length === 0 && (
+              <div className="text-center py-8 text-muted-foreground">
+                No departments found
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
 
       {/* Add Department Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
+        <DialogContent className="w-[95vw] max-w-md">
           <DialogHeader>
             <DialogTitle>Add Department</DialogTitle>
             <DialogDescription>
@@ -291,7 +331,7 @@ export default function DepartmentsPage() {
               </div>
               {error && <p className="text-sm text-destructive">{error}</p>}
             </div>
-            <DialogFooter className="mt-4">
+            <DialogFooter className="mt-4 flex-col sm:flex-row gap-2">
               <Button
                 type="button"
                 variant="outline"
@@ -299,10 +339,11 @@ export default function DepartmentsPage() {
                   setDialogOpen(false)
                   resetForm()
                 }}
+                className="w-full sm:w-auto"
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={submitting}>
+              <Button type="submit" disabled={submitting} className="w-full sm:w-auto">
                 {submitting ? "Creating..." : "Create Department"}
               </Button>
             </DialogFooter>
@@ -312,7 +353,7 @@ export default function DepartmentsPage() {
 
       {/* Edit Department Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent>
+        <DialogContent className="w-[95vw] max-w-md">
           <DialogHeader>
             <DialogTitle>Edit Department</DialogTitle>
             <DialogDescription>
@@ -341,7 +382,7 @@ export default function DepartmentsPage() {
               </div>
               {error && <p className="text-sm text-destructive">{error}</p>}
             </div>
-            <DialogFooter className="mt-4">
+            <DialogFooter className="mt-4 flex-col sm:flex-row gap-2">
               <Button
                 type="button"
                 variant="outline"
@@ -350,10 +391,11 @@ export default function DepartmentsPage() {
                   setSelectedDepartment(null)
                   resetForm()
                 }}
+                className="w-full sm:w-auto"
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={submitting}>
+              <Button type="submit" disabled={submitting} className="w-full sm:w-auto">
                 {submitting ? "Updating..." : "Update Department"}
               </Button>
             </DialogFooter>
