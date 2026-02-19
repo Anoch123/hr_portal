@@ -52,6 +52,8 @@ interface LeaveRequest {
   status: string
   isNoPay: boolean
   rejectionReason: string | null
+  cancellationReason: string | null
+  cancelledAt: string | null
   createdAt: string
   leaveMode: 'FULL' | 'HALF' | 'SHORT'
   startTime: string | null
@@ -622,6 +624,12 @@ export default function ApprovalsPage() {
                 <div className="bg-red-50 p-3 rounded-md">
                   <Label className="text-red-600">Rejection Reason</Label>
                   <p className="font-medium text-red-700">{selectedRequest.rejectionReason}</p>
+                </div>
+              )}
+              {selectedRequest.status === "CANCELLED" && selectedRequest.cancellationReason && (
+                <div className="bg-orange-50 p-3 rounded-md">
+                  <Label className="text-orange-600">Cancellation Reason</Label>
+                  <p className="font-medium text-orange-700">{selectedRequest.cancellationReason}</p>
                 </div>
               )}
             </div>

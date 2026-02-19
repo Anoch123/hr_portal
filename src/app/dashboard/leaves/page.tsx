@@ -68,6 +68,8 @@ interface LeaveRequest {
   is_no_pay: boolean
   created_at: string
   rejection_reason: string | null
+  cancellation_reason: string | null
+  cancelled_at: string | null
   start_time: string | null
   end_time: string | null
   leaveType: LeaveType
@@ -910,6 +912,14 @@ export default function LeavesPage() {
                   <p className="text-sm font-medium text-muted-foreground">Reason:</p>
                   <p className="text-sm mt-1">
                     {selectedRequest.reason}
+                  </p>
+                </div>
+              )}
+              {selectedRequest.status === "CANCELLED" && selectedRequest.cancellation_reason && (
+                <div className="mt-4 p-3 bg-orange-50 border border-orange-200 rounded-md">
+                  <p className="text-sm font-medium text-orange-800">Cancellation Reason:</p>
+                  <p className="text-sm text-orange-700 mt-1">
+                    {selectedRequest.cancellation_reason}
                   </p>
                 </div>
               )}
