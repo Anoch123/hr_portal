@@ -48,20 +48,53 @@ export async function POST(
       return NextResponse.json({ error: "Leave request not found" }, { status: 404 })
     }
 
-    // Only the owner can cancel their own request
-    if (leaveRequest.user_id !== userId) {
-      return NextResponse.json(
-        { error: "You can only cancel your own leave requests" },
-        { status: 403 }
-      )
-    }
-
     // Can only cancel pending or approved requests
     if (!["PENDING", "APPROVED"].includes(leaveRequest.status)) {
       return NextResponse.json(
         { error: "Can only cancel pending or approved requests" },
         { status: 400 }
       )
+    }
+
+    // For APPROVED requests, restrict cancellation to HR/Manager/Admin or users with explicit permission
+    if (leaveRequest.status === "APPROVED") {
+      // Get user's role
+      const { data: currentUser } = await supabaseAdmin
+        .from("users")
+        .select("role")
+        .eq("id", userId)
+        .single()
+
+      const userRole = currentUser?.role || ""
+
+      // Admin and HR can cancel any approved leave
+      if (["ADMIN", "HR_MANAGER"].includes(userRole)) {
+        // Allow
+      }
+      // Manager can cancel approved leave only if it's NOT their own request
+      else if (userRole === "MANAGER") {
+        if (leaveRequest.user_id === userId) {
+          return NextResponse.json(
+            { error: "Managers cannot cancel their own approved leave requests" },
+            { status: 403 }
+          )
+        }
+      }
+      // Employees cannot cancel approved leave
+      else {
+        return NextResponse.json(
+          { error: "Only HR/Manager/Admin can cancel accepted (approved) leave requests" },
+          { status: 403 }
+        )
+      }
+    } else {
+      // For non-approved (e.g., PENDING), only the owner may cancel
+      if (leaveRequest.user_id !== userId) {
+        return NextResponse.json(
+          { error: "You can only cancel your own leave requests" },
+          { status: 403 }
+        )
+      }
     }
 
     const previousStatus = leaveRequest.status

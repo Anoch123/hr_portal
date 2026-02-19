@@ -71,6 +71,9 @@ export default function ApprovalsPage() {
   const [viewDialogOpen, setViewDialogOpen] = useState(false)
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false)
   const [rejectionReason, setRejectionReason] = useState("")
+  const [cancelReason, setCancelReason] = useState("")
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
+  const [cancelRequestId, setCancelRequestId] = useState<string | null>(null)
   const [processingRequests, setProcessingRequests] = useState<Set<string>>(new Set())
   const [error, setError] = useState("")
   const [searchPending, setSearchPending] = useState("")
@@ -218,6 +221,62 @@ export default function ApprovalsPage() {
     }
   }
 
+  const handleCancelApproved = async () => {
+    if (!cancelRequestId || !cancelReason) {
+      setError("Please provide a cancellation reason")
+      return
+    }
+
+    setProcessingRequests(prev => new Set(prev).add(cancelRequestId))
+    setError("")
+    try {
+      const res = await fetch(`/api/leave-requests/${cancelRequestId}/cancel`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: cancelReason }),
+      })
+
+      if (!res.ok) {
+        const data = await res.json()
+        setError(data.error || "Failed to cancel approved request")
+        toast({
+          title: "Error",
+          description: data.error || "Failed to cancel approved request",
+          variant: "destructive",
+        })
+        return
+      }
+
+      fetchAllApprovals()
+      setViewDialogOpen(false)
+      toast({
+        title: "Success",
+        description: "Approved leave cancelled successfully",
+        variant: "success",
+      })
+    } catch (err) {
+      setError("An error occurred. Please try again.")
+      toast({
+        title: "Error",
+        description: "An error occurred. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setProcessingRequests(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(cancelRequestId)
+        return newSet
+      })
+    }
+  }
+
+  const openCancelDialog = (requestId: string) => {
+    setCancelRequestId(requestId)
+    setCancelReason("")
+    setError("")
+    setCancelDialogOpen(true)
+  }
+
   const filterRequests = (requests: LeaveRequest[], search: string) => {
     if (!search.trim()) return requests
     const searchLower = search.toLowerCase()
@@ -332,6 +391,22 @@ export default function ApprovalsPage() {
                       }}
                     >
                       View Details
+                    </Button>
+                  )}
+                  {/* Allow approvers to cancel approved requests */}
+                  {!showActions && request.status === "APPROVED" && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-red-600 hover:text-red-700"
+                      onClick={() => openCancelDialog(request.id)}
+                      disabled={processingRequests.has(request.id)}
+                    >
+                      {processingRequests.has(request.id) ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <X className="h-4 w-4" />
+                      )}
                     </Button>
                   )}
                 </div>
@@ -635,6 +710,56 @@ export default function ApprovalsPage() {
               ) : (
                 "Reject Request"
               )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel Approved Leave Dialog */}
+      <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cancel Approved Leave</DialogTitle>
+            <DialogDescription>
+              Please provide a reason for cancelling this approved leave request.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="cancelReason">Cancellation Reason *</Label>
+              <Textarea
+                id="cancelReason"
+                placeholder="Please provide a reason for cancellation..."
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                rows={3}
+              />
+            </div>
+          </div>
+          {error && (
+            <div className="bg-red-50 text-red-500 p-3 rounded-md text-sm">
+              {error}
+            </div>
+          )}
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setCancelDialogOpen(false)
+                setCancelReason("")
+                setError("")
+              }}
+              className="w-full sm:w-auto"
+            >
+              Keep Request
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleCancelApproved}
+              disabled={processingRequests.has(cancelRequestId || "") || !cancelReason.trim()}
+              className="w-full sm:w-auto"
+            >
+              {processingRequests.has(cancelRequestId || "") ? "Cancelling..." : "Cancel Request"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -58,6 +58,7 @@ interface LeaveBalance {
 
 interface LeaveRequest {
   id: string
+  user_id: string
   start_date: string
   end_date: string
   total_days: number
@@ -82,11 +83,13 @@ export default function LeavesPage() {
   const [loading, setLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false)
+  const [cancelReason, setCancelReason] = useState("")
   const [detailsDialogOpen, setDetailsDialogOpen] = useState(false)
   const [selectedRequest, setSelectedRequest] = useState<LeaveRequest | null>(null)
   const [isOnProbation, setIsOnProbation] = useState(false)
   const [hasCarriedOverLeave, setHasCarriedOverLeave] = useState(false)
   const [activeTab, setActiveTab] = useState("pending")
+  const [userRole, setUserRole] = useState<string>("")
 
   // Form state
   const [leaveTypeId, setLeaveTypeId] = useState("")
@@ -170,6 +173,7 @@ export default function LeavesPage() {
       const profile = await res.json()
       const onProbation = profile.user.is_on_probation || false
       setIsOnProbation(onProbation)
+      setUserRole(profile.user.role || "")
 
       if (onProbation) {
         // Check leave_balances for carried over leave from previous months
@@ -191,6 +195,23 @@ export default function LeavesPage() {
     } catch (err) {
       console.error("Error checking probation status:", err)
     }
+  }
+
+  // Check if user can cancel an approved leave request
+  const canCancelApproved = (requestUserId: string) => {
+    const currentUserId = session?.user?.id
+    
+    // Admin and HR can cancel any approved leave
+    if (["ADMIN", "HR_MANAGER"].includes(userRole)) {
+      return true
+    }
+    
+    // Managers can cancel approved leave only if it's NOT their own request
+    if (userRole === "MANAGER" && requestUserId !== currentUserId) {
+      return true
+    }
+    
+    return false
   }
 
   // Filter requests based on active tab
@@ -285,7 +306,7 @@ export default function LeavesPage() {
       const res = await fetch(`/api/leave-requests/${selectedRequest.id}/cancel`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reason: "Cancelled by employee" }),
+        body: JSON.stringify({ reason: cancelReason || "Cancelled by user" }),
       })
 
       if (!res.ok) {
@@ -301,6 +322,7 @@ export default function LeavesPage() {
 
       setCancelDialogOpen(false)
       setSelectedRequest(null)
+      setCancelReason("")
       fetchRequests()
       toast({
         title: "Success",
@@ -397,7 +419,7 @@ export default function LeavesPage() {
                         <Eye className="h-4 w-4 mr-1" />
                         View
                       </Button>
-                      {["PENDING", "APPROVED"].includes(request.status) && (
+                      {["PENDING", "APPROVED"].includes(request.status) && ((request.status === "PENDING") || canCancelApproved(request.user_id)) && (
                         <Button
                           variant="ghost"
                           size="sm"
@@ -492,7 +514,7 @@ export default function LeavesPage() {
                     <Eye className="h-4 w-4 mr-1" />
                     View Details
                   </Button>
-                  {["PENDING", "APPROVED"].includes(request.status) && (
+                  {["PENDING", "APPROVED"].includes(request.status) && ((request.status === "PENDING") || canCancelApproved(request.user_id)) && (
                     <Button
                       variant="ghost"
                       size="sm"
@@ -778,32 +800,47 @@ export default function LeavesPage() {
           <DialogHeader>
             <DialogTitle>Cancel Leave Request</DialogTitle>
             <DialogDescription>
-              Are you sure you want to cancel this leave request?
+              Please provide a reason for cancelling this leave request.
             </DialogDescription>
           </DialogHeader>
           {selectedRequest && (
-            <div className="py-4 space-y-2">
-              <p>
-                <strong>Leave Type:</strong> {selectedRequest.leaveType.name}
-              </p>
-              <p>
-                <strong>Dates:</strong> {formatDate(selectedRequest.start_date)} -{" "}
-                {formatDate(selectedRequest.end_date)}
-              </p>
-              <p>
-                <strong>Days:</strong> {selectedRequest.total_days}
-              </p>
-              {selectedRequest.reason && (
+            <div className="py-4 space-y-4">
+              <div className="space-y-2">
                 <p>
-                  <strong>Reason:</strong> {selectedRequest.reason}
+                  <strong>Leave Type:</strong> {selectedRequest.leaveType.name}
                 </p>
-              )}
+                <p>
+                  <strong>Dates:</strong> {formatDate(selectedRequest.start_date)} -{" "}
+                  {formatDate(selectedRequest.end_date)}
+                </p>
+                <p>
+                  <strong>Days:</strong> {selectedRequest.total_days}
+                </p>
+                {selectedRequest.reason && (
+                  <p>
+                    <strong>Original Reason:</strong> {selectedRequest.reason}
+                  </p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="cancelReason">Cancellation Reason *</Label>
+                <Textarea
+                  id="cancelReason"
+                  placeholder="Please provide a reason for cancellation..."
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  rows={3}
+                />
+              </div>
             </div>
           )}
           <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button
               variant="outline"
-              onClick={() => setCancelDialogOpen(false)}
+              onClick={() => {
+                setCancelDialogOpen(false)
+                setCancelReason("")
+              }}
               className="w-full sm:w-auto"
             >
               Keep Request
@@ -811,7 +848,7 @@ export default function LeavesPage() {
             <Button
               variant="destructive"
               onClick={handleCancel}
-              disabled={submitting}
+              disabled={submitting || !cancelReason.trim()}
               className="w-full sm:w-auto"
             >
               {submitting ? "Cancelling..." : "Cancel Request"}
