@@ -2,6 +2,7 @@ import { redirect } from "next/navigation"
 import { getSession } from "@/lib/get-session"
 import { Sidebar } from "@/components/layout/sidebar"
 import { cookies } from "next/headers"
+import { Toaster } from "@/components/ui/toaster"
 
 export default async function DashboardLayout({
   children,
@@ -38,6 +39,7 @@ export default async function DashboardLayout({
       <main className="lg:pl-64">
         <div className="p-4 pt-20 lg:p-8 lg:pt-8">{children}</div>
       </main>
+      <Toaster />
     </div>
   )
 }

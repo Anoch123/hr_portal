@@ -25,6 +25,7 @@ import {
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Plus, Edit, Trash2 } from "lucide-react"
+import { useToast } from "@/components/ui/use-toast"
 
 interface LeaveType {
   id: string
@@ -131,6 +132,7 @@ const FormContent = ({ formData, setFormData, error }: FormContentProps) => (
 )
 
 export default function LeaveTypesPage() {
+  const { toast } = useToast()
   const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([])
   const [loading, setLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -192,14 +194,29 @@ export default function LeaveTypesPage() {
       const data = await res.json()
       if (!res.ok) {
         setError(data.error || "Failed to create leave type")
+        toast({
+          title: "Error",
+          description: data.error || "Failed to create leave type",
+          variant: "destructive",
+        })
         return
       }
 
       setDialogOpen(false)
       resetForm()
       fetchLeaveTypes()
+      toast({
+        title: "Success",
+        description: "Leave type created successfully",
+        variant: "success",
+      })
     } catch (err) {
       setError("An error occurred. Please try again.")
+      toast({
+        title: "Error",
+        description: "An error occurred. Please try again.",
+        variant: "destructive",
+      })
     } finally {
       setSubmitting(false)
     }
@@ -225,14 +242,29 @@ export default function LeaveTypesPage() {
       const data = await res.json()
       if (!res.ok) {
         setError(data.error || "Failed to update leave type")
+        toast({
+          title: "Error",
+          description: data.error || "Failed to update leave type",
+          variant: "destructive",
+        })
         return
       }
 
       setEditDialogOpen(false)
       resetForm()
       fetchLeaveTypes()
+      toast({
+        title: "Success",
+        description: "Leave type updated successfully",
+        variant: "success",
+      })
     } catch (err) {
       setError("An error occurred. Please try again.")
+      toast({
+        title: "Error",
+        description: "An error occurred. Please try again.",
+        variant: "destructive",
+      })
     } finally {
       setSubmitting(false)
     }
@@ -248,13 +280,26 @@ export default function LeaveTypesPage() {
 
       if (!res.ok) {
         const data = await res.json()
-        alert(data.error || "Failed to delete leave type")
+        toast({
+          title: "Error",
+          description: data.error || "Failed to delete leave type",
+          variant: "destructive",
+        })
         return
       }
 
       fetchLeaveTypes()
+      toast({
+        title: "Success",
+        description: "Leave type deleted successfully",
+        variant: "success",
+      })
     } catch (err) {
-      alert("An error occurred. Please try again.")
+      toast({
+        title: "Error",
+        description: "An error occurred. Please try again.",
+        variant: "destructive",
+      })
     }
   }
 

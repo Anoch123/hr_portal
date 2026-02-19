@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/tabs"
 import { formatRole } from "@/lib/utils"
 import { Plus, Search, Edit, UserX, Calendar, UserMinus, Trash2 } from "lucide-react"
+import { useToast } from "@/components/ui/use-toast"
 
 interface LeaveBalance {
   id: string
@@ -102,6 +103,7 @@ interface Department {
 
 export default function EmployeesPage() {
   const { data: session } = useSession()
+  const { toast } = useToast()
   const [employees, setEmployees] = useState<Employee[]>([])
   const [managers, setManagers] = useState<Employee[]>([])
   const [departments, setDepartments] = useState<Department[]>([])
@@ -282,14 +284,29 @@ export default function EmployeesPage() {
       const data = await res.json()
       if (!res.ok) {
         setError(data.error || "Failed to create employee")
+        toast({
+          title: "Error",
+          description: data.error || "Failed to create employee",
+          variant: "destructive",
+        })
         return
       }
 
       setDialogOpen(false)
       resetForm()
       fetchEmployees()
+      toast({
+        title: "Success",
+        description: "Employee created successfully",
+        variant: "success",
+      })
     } catch (err) {
       setError("An error occurred. Please try again.")
+      toast({
+        title: "Error",
+        description: "An error occurred. Please try again.",
+        variant: "destructive",
+      })
     } finally {
       setSubmitting(false)
     }
@@ -319,14 +336,29 @@ export default function EmployeesPage() {
       const data = await res.json()
       if (!res.ok) {
         setError(data.error || "Failed to update employee")
+        toast({
+          title: "Error",
+          description: data.error || "Failed to update employee",
+          variant: "destructive",
+        })
         return
       }
 
       setEditDialogOpen(false)
       resetForm()
       fetchEmployees()
+      toast({
+        title: "Success",
+        description: "Employee updated successfully",
+        variant: "success",
+      })
     } catch (err) {
       setError("An error occurred. Please try again.")
+      toast({
+        title: "Error",
+        description: "An error occurred. Please try again.",
+        variant: "destructive",
+      })
     } finally {
       setSubmitting(false)
     }
@@ -344,13 +376,26 @@ export default function EmployeesPage() {
 
       if (!res.ok) {
         const data = await res.json()
-        alert(data.error || "Failed to terminate employee")
+        toast({
+          title: "Error",
+          description: data.error || "Failed to terminate employee",
+          variant: "destructive",
+        })
         return
       }
 
       fetchEmployees()
+      toast({
+        title: "Success",
+        description: "Employee terminated successfully",
+        variant: "success",
+      })
     } catch (err) {
-      alert("An error occurred. Please try again.")
+      toast({
+        title: "Error",
+        description: "An error occurred. Please try again.",
+        variant: "destructive",
+      })
     }
   }
 
@@ -380,14 +425,29 @@ export default function EmployeesPage() {
       const data = await res.json()
       if (!res.ok) {
         setError(data.error || "Failed to process resignation")
+        toast({
+          title: "Error",
+          description: data.error || "Failed to process resignation",
+          variant: "destructive",
+        })
         return
       }
 
       setResignDialogOpen(false)
       resetResignForm()
       fetchEmployees()
+      toast({
+        title: "Success",
+        description: "Employee resignation processed successfully",
+        variant: "success",
+      })
     } catch (err) {
       setError("An error occurred. Please try again.")
+      toast({
+        title: "Error",
+        description: "An error occurred. Please try again.",
+        variant: "destructive",
+      })
     } finally {
       setSubmitting(false)
     }

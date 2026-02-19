@@ -35,6 +35,7 @@ import { DatePicker } from "@/components/ui/date-picker"
 import { formatDate, formatDateTime, getStatusColor } from "@/lib/utils"
 import { Plus, X, Eye } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useToast } from "@/components/ui/use-toast"
 
 interface LeaveType {
   id: string
@@ -73,6 +74,7 @@ interface LeaveRequest {
 
 export default function LeavesPage() {
   const { data: session } = useSession()
+  const { toast } = useToast()
   const [requests, setRequests] = useState<LeaveRequest[]>([])
   const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([])
   const [availableLeaveTypeIds, setAvailableLeaveTypeIds] = useState<Set<string>>(new Set())
@@ -247,14 +249,29 @@ export default function LeavesPage() {
       const data = await res.json()
       if (!res.ok) {
         setError(data.error || "Failed to submit request")
+        toast({
+          title: "Error",
+          description: data.error || "Failed to submit leave request",
+          variant: "destructive",
+        })
         return
       }
 
       setDialogOpen(false)
       resetForm()
       fetchRequests()
+      toast({
+        title: "Success",
+        description: "Leave request submitted successfully",
+        variant: "success",
+      })
     } catch (err) {
       setError("An error occurred. Please try again.")
+      toast({
+        title: "Error",
+        description: "An error occurred. Please try again.",
+        variant: "destructive",
+      })
     } finally {
       setSubmitting(false)
     }
@@ -274,14 +291,29 @@ export default function LeavesPage() {
       if (!res.ok) {
         const data = await res.json()
         setError(data.error || "Failed to cancel request")
+        toast({
+          title: "Error",
+          description: data.error || "Failed to cancel leave request",
+          variant: "destructive",
+        })
         return
       }
 
       setCancelDialogOpen(false)
       setSelectedRequest(null)
       fetchRequests()
+      toast({
+        title: "Success",
+        description: "Leave request cancelled successfully",
+        variant: "success",
+      })
     } catch (err) {
       setError("An error occurred. Please try again.")
+      toast({
+        title: "Error",
+        description: "An error occurred. Please try again.",
+        variant: "destructive",
+      })
     } finally {
       setSubmitting(false)
     }

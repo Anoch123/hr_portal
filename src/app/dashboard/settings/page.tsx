@@ -9,10 +9,12 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { useTheme } from "@/components/providers/theme-provider"
+import { useToast } from "@/components/ui/use-toast"
 
 export default function SettingsPage() {
   const { data: session } = useSession()
   const { theme, setTheme } = useTheme()
+  const { toast } = useToast()
   const [passwordData, setPasswordData] = useState({
     currentPassword: "",
     newPassword: "",
@@ -70,11 +72,26 @@ export default function SettingsPage() {
           newPassword: "",
           confirmPassword: "",
         })
+        toast({
+          title: "Success",
+          description: "Password updated successfully",
+          variant: "success",
+        })
       } else {
         setMessage(data.error || "Failed to update password")
+        toast({
+          title: "Error",
+          description: data.error || "Failed to update password",
+          variant: "destructive",
+        })
       }
     } catch (error) {
       setMessage("An error occurred while updating password")
+      toast({
+        title: "Error",
+        description: "An error occurred while updating password",
+        variant: "destructive",
+      })
     } finally {
       setIsLoading(false)
     }

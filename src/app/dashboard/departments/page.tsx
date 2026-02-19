@@ -27,6 +27,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { formatDate } from "@/lib/utils"
 import { Plus, Search, Edit, Trash2 } from "lucide-react"
+import { useToast } from "@/components/ui/use-toast"
 
 interface Department {
   id: string
@@ -39,6 +40,7 @@ interface Department {
 
 export default function DepartmentsPage() {
   const { data: session } = useSession()
+  const { toast } = useToast()
   const [departments, setDepartments] = useState<Department[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
@@ -92,6 +94,11 @@ export default function DepartmentsPage() {
 
       if (!res.ok) {
         setError(data.error || "Failed to create department")
+        toast({
+          title: "Error",
+          description: data.error || "Failed to create department",
+          variant: "destructive",
+        })
         return
       }
 
@@ -99,8 +106,18 @@ export default function DepartmentsPage() {
       setFormData({ name: "", description: "" })
       setDialogOpen(false)
       setShowAddForm(false)
+      toast({
+        title: "Success",
+        description: "Department created successfully",
+        variant: "success",
+      })
     } catch (err) {
       setError("Failed to create department")
+      toast({
+        title: "Error",
+        description: "Failed to create department",
+        variant: "destructive",
+      })
     } finally {
       setSubmitting(false)
     }
@@ -124,6 +141,11 @@ export default function DepartmentsPage() {
 
       if (!res.ok) {
         setError(data.error || "Failed to update department")
+        toast({
+          title: "Error",
+          description: data.error || "Failed to update department",
+          variant: "destructive",
+        })
         return
       }
 
@@ -133,8 +155,18 @@ export default function DepartmentsPage() {
       setFormData({ name: "", description: "" })
       setEditDialogOpen(false)
       setSelectedDepartment(null)
+      toast({
+        title: "Success",
+        description: "Department updated successfully",
+        variant: "success",
+      })
     } catch (err) {
       setError("Failed to update department")
+      toast({
+        title: "Error",
+        description: "Failed to update department",
+        variant: "destructive",
+      })
     } finally {
       setSubmitting(false)
     }
@@ -152,13 +184,26 @@ export default function DepartmentsPage() {
 
       if (!res.ok) {
         const data = await res.json()
-        alert(data.error || "Failed to delete department")
+        toast({
+          title: "Error",
+          description: data.error || "Failed to delete department",
+          variant: "destructive",
+        })
         return
       }
 
       setDepartments(departments.filter(dept => dept.id !== department.id))
+      toast({
+        title: "Success",
+        description: "Department deleted successfully",
+        variant: "success",
+      })
     } catch (err) {
-      alert("Failed to delete department")
+      toast({
+        title: "Error",
+        description: "Failed to delete department",
+        variant: "destructive",
+      })
     }
   }
 

@@ -27,6 +27,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { formatDate, formatDateTime } from "@/lib/utils"
 import { Check, X, Eye, Loader2, Search } from "lucide-react"
+import { useToast } from "@/components/ui/use-toast"
 
 interface User {
   id: string
@@ -61,6 +62,7 @@ interface LeaveRequest {
 
 export default function ApprovalsPage() {
   const { data: session } = useSession()
+  const { toast } = useToast()
   const [pendingRequests, setPendingRequests] = useState<LeaveRequest[]>([])
   const [approvedRequests, setApprovedRequests] = useState<LeaveRequest[]>([])
   const [rejectedRequests, setRejectedRequests] = useState<LeaveRequest[]>([])
@@ -135,13 +137,28 @@ export default function ApprovalsPage() {
       if (!res.ok) {
         const data = await res.json()
         setError(data.error || "Failed to approve request")
+        toast({
+          title: "Error",
+          description: data.error || "Failed to approve request",
+          variant: "destructive",
+        })
         return
       }
 
       fetchAllApprovals()
       setViewDialogOpen(false)
+      toast({
+        title: "Success",
+        description: "Leave request approved successfully",
+        variant: "success",
+      })
     } catch (err) {
       setError("An error occurred. Please try again.")
+      toast({
+        title: "Error",
+        description: "An error occurred. Please try again.",
+        variant: "destructive",
+      })
     } finally {
       setProcessingRequests(prev => {
         const newSet = new Set(prev)
@@ -169,14 +186,29 @@ export default function ApprovalsPage() {
       if (!res.ok) {
         const data = await res.json()
         setError(data.error || "Failed to reject request")
+        toast({
+          title: "Error",
+          description: data.error || "Failed to reject request",
+          variant: "destructive",
+        })
         return
       }
 
       setRejectDialogOpen(false)
       setRejectionReason("")
       fetchAllApprovals()
+      toast({
+        title: "Success",
+        description: "Leave request rejected successfully",
+        variant: "success",
+      })
     } catch (err) {
       setError("An error occurred. Please try again.")
+      toast({
+        title: "Error",
+        description: "An error occurred. Please try again.",
+        variant: "destructive",
+      })
     } finally {
       setProcessingRequests(prev => {
         const newSet = new Set(prev)
