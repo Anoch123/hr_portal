@@ -39,6 +39,10 @@ export type Permission =
   | 'attendance:update'
   | 'attendance:delete'
   | 'attendance:upload'
+  | 'privacy_policy:read'
+  | 'privacy_policy:create'
+  | 'privacy_policy:update'
+  | 'privacy_policy:delete'
 
 // Permissions are now fetched from database
 
@@ -138,6 +142,7 @@ export const navigationItems: NavItem[] = [
   { label: 'ACL Management', href: '/dashboard/acl', icon: 'Shield', permission: 'permissions:read' }, // ACL management
   { label: 'Attendance', href: '/dashboard/attendance', icon: 'Clock', permission: 'attendance:read' },
   { label: 'Reports', href: '/dashboard/reports', icon: 'BarChart', permission: 'reports:read' },
+  { label: 'Privacy Policy', href: '/dashboard/privacy-policy', icon: 'FileText', permission: 'privacy_policy:read' },
   { label: 'Settings', href: '/dashboard/settings', icon: 'Settings', permission: 'settings:read' },
 ]
 

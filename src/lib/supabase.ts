@@ -1,20 +1,40 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-if (!supabaseUrl || !supabaseAnonKey) {
+// Only log warnings on the server side
+if (typeof window === 'undefined' && (!supabaseUrl || !supabaseAnonKey)) {
   console.warn('Supabase environment variables are not fully configured:', {
     hasUrl: !!supabaseUrl,
     hasKey: !!supabaseAnonKey
   })
 }
 
-// Create client with fallback to prevent runtime crashes
-export const supabase = createClient(
-  supabaseUrl || 'https://placeholder.supabase.co',
-  supabaseAnonKey || 'placeholder-key'
-)
+// Singleton pattern for browser to avoid multiple GoTrueClient instances
+let supabaseInstance: SupabaseClient | undefined
+
+function getSupabaseClient(): SupabaseClient {
+  if (typeof window === 'undefined') {
+    // Server side: create a new instance each time
+    return createClient(
+      supabaseUrl || 'https://placeholder.supabase.co',
+      supabaseAnonKey || 'placeholder-key'
+    )
+  }
+  
+  // Browser: use singleton
+  if (!supabaseInstance) {
+    supabaseInstance = createClient(
+      supabaseUrl || 'https://placeholder.supabase.co',
+      supabaseAnonKey || 'placeholder-key'
+    )
+  }
+  return supabaseInstance
+}
+
+// Export the singleton client
+export const supabase = getSupabaseClient()
 
 export type Database = {
   public: {

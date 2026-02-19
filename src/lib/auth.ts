@@ -210,14 +210,26 @@ export async function verifyCurrentPassword(email: string, password: string) {
 
 export async function hasPermission(userId: string, required: string): Promise<{hasPermission: boolean, error: any}> {
   try {
+    // Validate inputs
+    if (!userId || typeof userId !== 'string') {
+      console.error('hasPermission: Invalid userId provided')
+      return { hasPermission: false, error: new Error('Invalid userId') }
+    }
+
     const { data: user, error } = await supabaseAdmin
       .from('users')
       .select('role')
       .eq('id', userId)
       .single()
 
-    if (error || !user) {
-      return { hasPermission: false, error: error || new Error('User not found') }
+    if (error) {
+      console.error('hasPermission: Error fetching user role:', error.message || error)
+      return { hasPermission: false, error }
+    }
+
+    if (!user) {
+      console.error('hasPermission: User not found for id:', userId)
+      return { hasPermission: false, error: new Error('User not found') }
     }
 
     if (required.includes(':')) {
@@ -240,7 +252,7 @@ export async function hasPermission(userId: string, required: string): Promise<{
       return { hasPermission: userRoleLevel >= requiredRoleLevel, error: null }
     }
   } catch (error) {
-    console.error('Permission check failed:', error)
+    console.error('hasPermission: Unexpected error:', error)
     return { hasPermission: false, error }
   }
 }

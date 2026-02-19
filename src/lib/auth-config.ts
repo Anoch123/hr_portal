@@ -2,8 +2,8 @@ import { type NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 import { signIn as authSignIn, getUserProfile } from "@/lib/auth"
 
-// Warn if NEXTAUTH_SECRET is not set
-if (!process.env.NEXTAUTH_SECRET) {
+// Only warn on server side (not during client bundling)
+if (typeof window === 'undefined' && !process.env.NEXTAUTH_SECRET) {
   console.warn('NEXTAUTH_SECRET is not set - authentication may not work correctly')
 }
 
