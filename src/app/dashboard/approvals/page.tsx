@@ -58,6 +58,7 @@ interface LeaveRequest {
   leaveMode: 'FULL' | 'HALF' | 'SHORT'
   startTime: string | null
   endTime: string | null
+  halfDayPeriod: string | null
   user: User
   leaveType: LeaveType
 }
@@ -333,7 +334,7 @@ export default function ApprovalsPage() {
               </TableCell>
               <TableCell>
                 {request.leaveMode === 'FULL' ? 'Full Day' :
-                  request.leaveMode === 'HALF' ? `Half Day (${request.startTime || 'N/A'} - ${request.endTime || 'N/A'})` :
+                  request.leaveMode === 'HALF' ? (request.halfDayPeriod === 'MORNING' ? 'Half Day (Morning Half)' : request.halfDayPeriod === 'EVENING' ? 'Half Day (Evening Half)' : 'Morning Half / Evening Half') :
                     request.leaveMode === 'SHORT' ? `Short (${request.startTime || 'N/A'} - ${request.endTime || 'N/A'})` : request.leaveMode}
               </TableCell>
               <TableCell>
@@ -592,7 +593,7 @@ export default function ApprovalsPage() {
                    <Label className="text-muted-foreground">Leave Mode</Label>
                    <p className="font-medium">
                      {selectedRequest.leaveMode === 'FULL' ? 'Full Day' :
-                       selectedRequest.leaveMode === 'HALF' ? `Half Day (${selectedRequest.startTime || 'N/A'} - ${selectedRequest.endTime || 'N/A'})` :
+                       selectedRequest.leaveMode === 'HALF' ? (selectedRequest.halfDayPeriod === 'MORNING' ? 'Half Day (Morning Half)' : selectedRequest.halfDayPeriod === 'EVENING' ? 'Half Day (Evening Half)' : 'Morning Half / Evening Half') :
                          selectedRequest.leaveMode === 'SHORT' ? `Short Leave (${selectedRequest.startTime || 'N/A'} - ${selectedRequest.endTime || 'N/A'})` : selectedRequest.leaveMode}
                    </p>
                  </div>

@@ -101,6 +101,7 @@ export async function POST(request: NextRequest) {
       reason, 
       leaveMode = 'FULL', 
       isNoPay = false,
+      halfDayOption,
       startTime,
       endTime
     } = body
@@ -153,6 +154,21 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         )
       }
+    }
+
+    // Validate half day selection
+    if (leaveMode === 'HALF' && !halfDayOption) {
+      return NextResponse.json(
+        { error: "Please select Morning or Evening." },
+        { status: 400 }
+      )
+    }
+
+    if (leaveMode === 'HALF' && halfDayOption && !['MORNING', 'EVENING'].includes(halfDayOption)) {
+      return NextResponse.json(
+        { error: "Invalid half day option. Please select Morning or Evening." },
+        { status: 400 }
+      )
     }
 
     // Check if user is on probation and restrict leave modes
@@ -311,6 +327,17 @@ export async function POST(request: NextRequest) {
     const effectiveIsNoPay = isNoPay || (totalDays > availableDays)
 
     // Create leave request
+    // For half day, set times based on halfDayOption (Morning: 09:00-13:00, Evening: 13:00-17:00)
+    let halfDayStartTime: string | undefined
+    let halfDayEndTime: string | undefined
+    if (leaveMode === 'HALF' && halfDayOption === 'MORNING') {
+      halfDayStartTime = '09:00'
+      halfDayEndTime = '13:00'
+    } else if (leaveMode === 'HALF' && halfDayOption === 'EVENING') {
+      halfDayStartTime = '13:00'
+      halfDayEndTime = '17:00'
+    }
+
     const { leaveRequest, error: createError } = await createRequest(
       userId,
       leaveTypeId,
@@ -321,8 +348,9 @@ export async function POST(request: NextRequest) {
       leaveMode,
       effectiveIsNoPay,
       {
-        startTime: (leaveMode === 'SHORT' || leaveMode === 'HALF') ? startTime : undefined,
-        endTime: (leaveMode === 'SHORT' || leaveMode === 'HALF') ? endTime : undefined,
+        startTime: leaveMode === 'SHORT' ? startTime : (leaveMode === 'HALF' ? halfDayStartTime : undefined),
+        endTime: leaveMode === 'SHORT' ? endTime : (leaveMode === 'HALF' ? halfDayEndTime : undefined),
+        halfDayPeriod: leaveMode === 'HALF' ? halfDayOption : undefined,
       }
     )
 

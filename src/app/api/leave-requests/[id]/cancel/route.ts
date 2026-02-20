@@ -177,6 +177,21 @@ export async function POST(
       }
     }
 
+    // Send email to employee when their leave is cancelled
+    const employeeEmailContent = emailTemplates.leaveRequestCancelled(
+      `${leaveRequest.user.first_name} ${leaveRequest.user.last_name}`,
+      leaveRequest.leaveType.name,
+      formatDate(leaveRequest.start_date),
+      formatDate(leaveRequest.end_date),
+      previousStatus === "APPROVED" ? "Your manager" : "You",
+      reason
+    )
+    await sendEmail({
+      to: leaveRequest.user.email,
+      subject: employeeEmailContent.subject,
+      html: employeeEmailContent.html,
+    })
+
     return NextResponse.json({
       message: "Leave request cancelled successfully",
       leaveRequest: updatedRequest,

@@ -47,6 +47,7 @@ export async function getLeaveBalance(userId: string, year: number, leaveTypeId?
 export interface TimeSelection {
   startTime?: string // Format: HH:MM (e.g., "09:00")
   endTime?: string   // Format: HH:MM (e.g., "17:00")
+  halfDayPeriod?: 'MORNING' | 'EVENING' // Half day period selection
 }
 
 export async function createLeaveRequest(
@@ -75,6 +76,7 @@ export async function createLeaveRequest(
         is_no_pay: isNoPay,
         start_time: timeSelection?.startTime || null,
         end_time: timeSelection?.endTime || null,
+        half_day_period: timeSelection?.halfDayPeriod || null,
       })
       .select()
       .single()

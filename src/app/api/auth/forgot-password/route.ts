@@ -28,12 +28,13 @@ export async function POST(request: NextRequest) {
     console.log('Sending password reset to:', email, 'with redirect to:', redirectTo)
 
     // Use Supabase's resetPasswordForEmail method with the redirect URL
-    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.toLowerCase(), {
+    const { error: resetError, data } = await supabase.auth.resetPasswordForEmail(email.toLowerCase(), {
       redirectTo: redirectTo,
     })
 
     if (resetError) {
       console.error('Password reset error:', resetError)
+      console.error('Error details:', JSON.stringify(resetError))
       
       // Return generic success to prevent email enumeration
       return NextResponse.json(
@@ -43,6 +44,7 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('Password reset email sent successfully to:', email)
+    console.log('Password reset data:', JSON.stringify(data))
 
     return NextResponse.json(
       { message: 'Password reset email has been sent' },

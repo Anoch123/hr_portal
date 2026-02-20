@@ -72,6 +72,7 @@ interface LeaveRequest {
   cancelled_at: string | null
   start_time: string | null
   end_time: string | null
+  half_day_period: string | null
   leaveType: LeaveType
 }
 
@@ -98,6 +99,7 @@ export default function LeavesPage() {
   const [startDate, setStartDate] = useState<Date | undefined>()
   const [endDate, setEndDate] = useState<Date | undefined>()
   const [leaveMode, setLeaveMode] = useState<'FULL' | 'HALF' | 'SHORT'>('FULL')
+  const [halfDayOption, setHalfDayOption] = useState<'MORNING' | 'EVENING'>('MORNING')
   const [reason, setReason] = useState<'Exam Leave'| 'Study Leave'| 'Religious Holiday'| 'Sick Leave'| 'Medical Appointment'| 'Hospitalization'| 'Funeral'| 'Personal Leave'>('Personal Leave')
   const [startTime, setStartTime] = useState('09:00')
   const [endTime, setEndTime] = useState('11:00')
@@ -253,6 +255,12 @@ export default function LeavesPage() {
       }
     }
 
+    // Validate half day selection
+    if (leaveMode === 'HALF' && !halfDayOption) {
+      setError("Please select Morning or Evening.")
+      return
+    }
+
     setSubmitting(true)
     try {
       const res = await fetch("/api/leave-requests", {
@@ -263,6 +271,7 @@ export default function LeavesPage() {
           startDate: formatLocalDate(startDate),
           endDate: formatLocalDate(endDate),
           leaveMode,
+          halfDayOption: leaveMode === 'HALF' ? halfDayOption : undefined,
           reason,
           startTime: leaveMode === 'SHORT' ? startTime : undefined,
           endTime: leaveMode === 'SHORT' ? endTime : undefined,
@@ -348,6 +357,7 @@ export default function LeavesPage() {
     setStartDate(undefined)
     setEndDate(undefined)
     setLeaveMode('FULL')
+    setHalfDayOption('MORNING')
     setReason('Personal Leave')
     setStartTime('09:00')
     setEndTime('11:00')
@@ -386,7 +396,7 @@ export default function LeavesPage() {
                   </TableCell>
                   <TableCell>
                     {request.leave_mode === 'FULL' ? 'Full Day' :
-                      request.leave_mode === 'HALF' ? `Half Day (${request.start_time || 'N/A'} - ${request.end_time || 'N/A'})` :
+                      request.leave_mode === 'HALF' ? (request.half_day_period === 'MORNING' ? 'Half Day (Morning Half)' : request.half_day_period === 'EVENING' ? 'Half Day (Evening Half)' : 'Morning Half / Evening Half') :
                         request.leave_mode === 'SHORT' ? `Short Leave (${request.start_time || 'N/A'} - ${request.end_time || 'N/A'})` : request.leave_mode}
                   </TableCell>
                   <TableCell>{formatDate(request.start_date)}</TableCell>
@@ -464,7 +474,7 @@ export default function LeavesPage() {
                     <h3 className="font-medium">{request.leaveType?.name || 'Unknown'}</h3>
                     <p className="text-sm text-muted-foreground">
                       {request.leave_mode === 'FULL' ? 'Full Day' :
-                        request.leave_mode === 'HALF' ? `Half Day (${request.start_time || 'N/A'} - ${request.end_time || 'N/A'})` :
+                        request.leave_mode === 'HALF' ? (request.half_day_period === 'MORNING' ? 'Morning Half' : request.half_day_period === 'EVENING' ? 'Evening Half' : 'Morning Half / Evening Half') :
                           request.leave_mode === 'SHORT' ? `Short Leave (${request.start_time || 'N/A'} - ${request.end_time || 'N/A'})` : request.leave_mode}
                     </p>
                   </div>
@@ -653,6 +663,37 @@ export default function LeavesPage() {
                   </Select>
                 )}
               </div>
+              
+              {/* Half Day Selection */}
+              {leaveMode === 'HALF' && (
+                <div className="space-y-4 p-4 border rounded-md bg-slate-50">
+                  <div className="text-sm font-medium text-slate-700">Morning Half / Evening Half *</div>
+                  <div className="flex gap-4">
+                    <label className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="halfDayOption"
+                        value="MORNING"
+                        checked={halfDayOption === 'MORNING'}
+                        onChange={() => setHalfDayOption('MORNING')}
+                        className="w-4 h-4 text-primary"
+                      />
+                      <span className="text-sm text-black">Morning Half</span>
+                    </label>
+                    <label className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="halfDayOption"
+                        value="EVENING"
+                        checked={halfDayOption === 'EVENING'}
+                        onChange={() => setHalfDayOption('EVENING')}
+                        className="w-4 h-4 text-primary"
+                      />
+                      <span className="text-sm text-black">Evening Half</span>
+                    </label>
+                  </div>
+                </div>
+              )}
               
               {/* Short Leave Time Selection */}
               {leaveMode === 'SHORT' && (
@@ -890,7 +931,7 @@ export default function LeavesPage() {
               <p>
                 <strong>Mode:</strong>{" "}
                 {selectedRequest.leave_mode === 'FULL' ? 'Full Day' :
-                  selectedRequest.leave_mode === 'HALF' ? `Half Day (${selectedRequest.start_time || 'N/A'} - ${selectedRequest.end_time || 'N/A'})` :
+                  selectedRequest.leave_mode === 'HALF' ? `Half Day (${selectedRequest.half_day_period || 'N/A'})` :
                     selectedRequest.leave_mode === 'SHORT' ? `Short Leave (${selectedRequest.start_time || 'N/A'} - ${selectedRequest.end_time || 'N/A'})` : selectedRequest.leave_mode}
               </p>
               <p>

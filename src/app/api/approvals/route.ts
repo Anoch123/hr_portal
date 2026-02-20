@@ -109,6 +109,7 @@ export async function GET(request: NextRequest) {
         leaveMode: request.leave_mode,
         startTime: request.start_time,
         endTime: request.end_time,
+        halfDayPeriod: request.half_day_period,
         user: request.user ? {
           id: request.user.id,
           firstName: request.user.first_name,
