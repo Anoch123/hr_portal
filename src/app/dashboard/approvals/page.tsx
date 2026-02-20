@@ -69,6 +69,7 @@ export default function ApprovalsPage() {
   const [pendingRequests, setPendingRequests] = useState<LeaveRequest[]>([])
   const [approvedRequests, setApprovedRequests] = useState<LeaveRequest[]>([])
   const [rejectedRequests, setRejectedRequests] = useState<LeaveRequest[]>([])
+  const [cancelledRequests, setCancelledRequests] = useState<LeaveRequest[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedRequest, setSelectedRequest] = useState<LeaveRequest | null>(null)
   const [viewDialogOpen, setViewDialogOpen] = useState(false)
@@ -82,6 +83,7 @@ export default function ApprovalsPage() {
   const [searchPending, setSearchPending] = useState("")
   const [searchApproved, setSearchApproved] = useState("")
   const [searchRejected, setSearchRejected] = useState("")
+  const [searchCancelled, setSearchCancelled] = useState("")
 
   useEffect(() => {
     fetchAllApprovals()
@@ -89,21 +91,24 @@ export default function ApprovalsPage() {
 
   const fetchAllApprovals = async () => {
     try {
-      const [pendingRes, approvedRes, rejectedRes] = await Promise.all([
+      const [pendingRes, approvedRes, rejectedRes, cancelledRes] = await Promise.all([
         fetch("/api/approvals?status=PENDING"),
         fetch("/api/approvals?status=APPROVED"),
         fetch("/api/approvals?status=REJECTED"),
+        fetch("/api/approvals?status=CANCELLED"),
       ])
 
-      const [pendingData, approvedData, rejectedData] = await Promise.all([
+      const [pendingData, approvedData, rejectedData, cancelledData] = await Promise.all([
         pendingRes.json(),
         approvedRes.json(),
         rejectedRes.json(),
+        cancelledRes.json(),
       ])
 
       setPendingRequests(pendingData.requests || [])
       setApprovedRequests(approvedData.requests || [])
       setRejectedRequests(rejectedData.requests || [])
+      setCancelledRequests(cancelledData.requests || [])
     } catch (err) {
       console.error("Error fetching approvals:", err)
     } finally {
@@ -442,6 +447,9 @@ export default function ApprovalsPage() {
           <TabsTrigger value="rejected">
             Rejected ({rejectedRequests.length})
           </TabsTrigger>
+          <TabsTrigger value="cancelled">
+            Cancelled ({cancelledRequests.length})
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="pending">
@@ -526,6 +534,31 @@ export default function ApprovalsPage() {
                 <p className="text-center py-4">Loading...</p>
               ) : (
                 renderRequestsTable(filterRequests(rejectedRequests, searchRejected), false)
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="cancelled">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="relative w-64">
+                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search by name, email, or leave type..."
+                    value={searchCancelled}
+                    onChange={(e) => setSearchCancelled(e.target.value)}
+                    className="pl-8"
+                  />
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <p className="text-center py-4">Loading...</p>
+              ) : (
+                renderRequestsTable(filterRequests(cancelledRequests, searchCancelled), false)
               )}
             </CardContent>
           </Card>
