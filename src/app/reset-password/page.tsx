@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { Eye, EyeOff, ArrowLeft } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -12,8 +12,6 @@ import { supabase } from "@/lib/supabase"
 
 export default function ResetPasswordPage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
-  
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
@@ -24,12 +22,27 @@ export default function ResetPasswordPage() {
 
   useEffect(() => {
     // Check if we have the token in the URL hash
-    const hash = window.location.hash
-    if (hash && hash.includes("access_token")) {
-      setIsValidToken(true)
-    } else {
-      setIsValidToken(false)
+    // Use a small delay to ensure the hash is properly loaded
+    const checkHash = () => {
+      const hash = window.location.hash
+      if (hash && (hash.includes("access_token") || hash.includes("token="))) {
+        setIsValidToken(true)
+      } else {
+        // Give it a bit more time in case of client-side navigation
+        setTimeout(() => {
+          const recheckHash = window.location.hash
+          if (recheckHash && (recheckHash.includes("access_token") || recheckHash.includes("token="))) {
+            setIsValidToken(true)
+          } else {
+            setIsValidToken(false)
+          }
+        }, 500)
+      }
     }
+    
+    // Small delay to ensure DOM is ready
+    const timer = setTimeout(checkHash, 100)
+    return () => clearTimeout(timer)
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {

@@ -8,8 +8,8 @@ const CACHE_DURATION = 5000 // 5 seconds
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Skip middleware for setup, login and API routes
-  if (pathname.startsWith('/setup') || pathname.startsWith('/login') || pathname.startsWith('/api')) {
+  // Skip middleware for setup, login, reset-password, and API routes
+  if (pathname.startsWith('/setup') || pathname.startsWith('/login') || pathname.startsWith('/reset-password') || pathname.startsWith('/api')) {
     return NextResponse.next()
   }
 
