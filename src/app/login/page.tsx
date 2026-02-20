@@ -20,6 +20,13 @@ export default function LoginPage() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
 
+  // Forgot password state
+  const [showForgotPassword, setShowForgotPassword] = useState(false)
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState("")
+  const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false)
+  const [forgotPasswordSuccess, setForgotPasswordSuccess] = useState(false)
+  const [forgotPasswordError, setForgotPasswordError] = useState("")
+
   const hasRedirected = useRef(false)
 
   // Redirect if already logged in
@@ -63,6 +70,40 @@ export default function LoginPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setForgotPasswordError("")
+    setForgotPasswordLoading(true)
+
+    try {
+      const response = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: forgotPasswordEmail }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        setForgotPasswordError(data.error || "Failed to send reset email")
+        return
+      }
+
+      setForgotPasswordSuccess(true)
+    } catch {
+      setForgotPasswordError("An error occurred. Please try again.")
+    } finally {
+      setForgotPasswordLoading(false)
+    }
+  }
+
+  const openForgotPassword = () => {
+    setForgotPasswordEmail(email)
+    setShowForgotPassword(true)
+    setForgotPasswordSuccess(false)
+    setForgotPasswordError("")
   }
 
   return (
@@ -127,8 +168,91 @@ export default function LoginPage() {
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Signing in..." : "Sign in"}
             </Button>
+
+            {/* Forgot Password Link */}
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={openForgotPassword}
+                className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
+              >
+                Forgot your password?
+              </button>
+            </div>
           </form>
         </CardContent>
+
+        {/* Forgot Password Modal */}
+        {showForgotPassword && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <Card className="w-full max-w-md mx-4">
+              <CardHeader>
+                <CardTitle className="text-xl">Reset Password</CardTitle>
+                <CardDescription>
+                  Enter your email address and we'll send you a link to reset your password.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {forgotPasswordSuccess ? (
+                  <div className="text-center py-4">
+                    <div className="text-green-500 mb-4">
+                      <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <p className="text-gray-600 mb-4">
+                      Password reset email has been sent to your inbox. Please check your email and follow the instructions.
+                    </p>
+                    <Button
+                      onClick={() => setShowForgotPassword(false)}
+                      className="w-full"
+                    >
+                      Back to Login
+                    </Button>
+                  </div>
+                ) : (
+                  <form onSubmit={handleForgotPassword} className="space-y-4">
+                    {forgotPasswordError && (
+                      <div className="bg-red-50 text-red-500 p-3 rounded-md text-sm">
+                        {forgotPasswordError}
+                      </div>
+                    )}
+
+                    <div className="space-y-2">
+                      <Label htmlFor="forgotEmail">Email</Label>
+                      <Input
+                        id="forgotEmail"
+                        type="email"
+                        placeholder="name@company.com"
+                        value={forgotPasswordEmail}
+                        onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                        required
+                      />
+                    </div>
+
+                    <div className="flex gap-3">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setShowForgotPassword(false)}
+                        className="flex-1"
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        type="submit"
+                        disabled={forgotPasswordLoading}
+                        className="flex-1"
+                      >
+                        {forgotPasswordLoading ? "Sending..." : "Send Reset Link"}
+                      </Button>
+                    </div>
+                  </form>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </Card>
     </div>
   )

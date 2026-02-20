@@ -251,6 +251,7 @@ export default function ApprovalsPage() {
 
       fetchAllApprovals()
       setViewDialogOpen(false)
+      setCancelDialogOpen(false)
       toast({
         title: "Success",
         description: "Approved leave cancelled successfully",

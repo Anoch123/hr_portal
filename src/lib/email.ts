@@ -190,4 +190,24 @@ export const emailTemplates = {
       </div>
     `,
   }),
+
+  passwordReset: (resetUrl: string) => ({
+    subject: `Reset Your Password - Leave Management System`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #333;">Reset Your Password</h2>
+        <p>We received a request to reset your password. Click the button below to create a new password:</p>
+        <div style="margin: 20px 0;">
+          <a href="${resetUrl}" style="display: inline-block; background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px;">Reset Password</a>
+        </div>
+        <p style="color: #666; font-size: 14px;">
+          This link will expire in 1 hour. If you didn't request a password reset, please ignore this email or contact support if you have concerns.
+        </p>
+        <p style="color: #666; font-size: 14px; margin-top: 20px;">
+          Alternatively, you can copy and paste this link into your browser:<br/>
+          ${resetUrl}
+        </p>
+      </div>
+    `,
+  }),
 }

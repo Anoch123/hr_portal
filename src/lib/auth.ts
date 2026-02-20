@@ -208,6 +208,30 @@ export async function verifyCurrentPassword(email: string, password: string) {
   }
 }
 
+export async function generatePasswordResetLink(email: string, redirectTo: string) {
+  try {
+    // Generate a password reset link using Supabase admin API
+    const { data, error } = await supabaseAdmin.auth.admin.generateLink({
+      type: 'recovery',
+      email,
+      // Note: redirectTo is handled by Supabase Site URL configuration
+    })
+
+    if (error) {
+      return { link: null, error }
+    }
+
+    // The response contains the user and properties with the email confirmation URL
+    // Return a constructed URL with the redirect parameter
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    const resetUrl = `${appUrl}/reset-password`
+    
+    return { link: resetUrl, error: null }
+  } catch (error) {
+    return { link: null, error }
+  }
+}
+
 export async function hasPermission(userId: string, required: string): Promise<{hasPermission: boolean, error: any}> {
   try {
     // Validate inputs
