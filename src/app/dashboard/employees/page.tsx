@@ -880,7 +880,7 @@ export default function EmployeesPage() {
               Add Employee
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md w-[95vw] max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-3xl w-[95vw] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Add New Employee</DialogTitle>
               <DialogDescription>
@@ -1226,7 +1226,7 @@ export default function EmployeesPage() {
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-md w-[95vw] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl w-[95vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Employee</DialogTitle>
             <DialogDescription>
@@ -1603,7 +1603,7 @@ export default function EmployeesPage() {
 
       {/* Resign Dialog */}
       <Dialog open={resignDialogOpen} onOpenChange={setResignDialogOpen}>
-        <DialogContent className="max-w-md w-[95vw]">
+        <DialogContent className="max-w-3xl w-[95vw]">
           <DialogHeader>
             <DialogTitle>Process Employee Resignation</DialogTitle>
             <DialogDescription>

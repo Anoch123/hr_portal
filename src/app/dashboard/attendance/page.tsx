@@ -108,6 +108,7 @@ export default function AttendancePage() {
   })
 
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const is_coming_soon = true;
 
   useEffect(() => {
     fetchEmployees()
@@ -460,7 +461,7 @@ export default function AttendancePage() {
   const EditDialog = () => {
     return (
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle>Edit Attendance</DialogTitle>
             <DialogDescription>
@@ -556,7 +557,7 @@ export default function AttendancePage() {
             Reconcile with Leave
           </Button>
         </DialogTrigger>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle>Reconcile Attendance with Leave</DialogTitle>
             <DialogDescription>
@@ -635,297 +636,313 @@ export default function AttendancePage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      {is_coming_soon ? (
         <div>
           <h1 className="text-3xl font-bold">Attendance Management</h1>
           <p className="text-muted-foreground">
             Track and manage employee attendance records
           </p>
+          <Card className="mt-4">
+            <CardContent className="py-8">
+              <div className="text-center text-muted-foreground">Attendance feature is under development!</div>
+            </CardContent>
+          </Card>
         </div>
+      ) : (
+        <>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold">Attendance Management</h1>
+              <p className="text-muted-foreground">
+                Track and manage employee attendance records
+              </p>
+            </div>
 
-        <div className="flex items-center gap-2">
-          <ReconcileDialog />
-          <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Upload className="h-4 w-4 mr-2" />
-                Upload Attendance
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[80vh] overflow-auto">
-              <DialogHeader>
-                <DialogTitle>Upload Fingerprint Attendance</DialogTitle>
-                <DialogDescription>
-                  Upload an Excel or CSV file to preview or import attendance data
-                </DialogDescription>
-              </DialogHeader>
+            <div className="flex items-center gap-2">
+              <ReconcileDialog />
+              <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload Attendance
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-4xl max-h-[80vh] overflow-auto">
+                  <DialogHeader>
+                    <DialogTitle>Upload Fingerprint Attendance</DialogTitle>
+                    <DialogDescription>
+                      Upload an Excel or CSV file to preview or import attendance data
+                    </DialogDescription>
+                  </DialogHeader>
 
-              <div className="space-y-4">
-                <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center">
-                  <FileSpreadsheet className="h-12 w-12 mx-auto text-gray-400 mb-2" />
-                  <Label htmlFor="file-upload" className="cursor-pointer">
-                    <span className="text-primary hover:underline">Click to upload</span>
-                    <span className="text-muted-foreground"> or drag and drop</span>
-                  </Label>
-                  <Input
-                    id="file-upload"
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".xlsx,.xls,.csv"
-                    className="hidden"
-                    onChange={handleFileUpload}
-                    disabled={uploading || previewLoading}
-                  />
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Excel (.xlsx, .xls) or CSV files only
-                  </p>
-                </div>
-
-                <div className="flex gap-2">
-
-                  <Input
-                    id="preview-upload"
-                    type="file"
-                    accept=".xlsx,.xls,.csv"
-                    className="hidden"
-                    onChange={handlePreview}
-                    disabled={uploading || previewLoading}
-                  />
-                </div>
-
-                {uploading && (
-                  <div className="flex items-center justify-center py-4">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                  </div>
-                )}
-
-                {previewLoading && (
-                  <div className="flex items-center justify-center py-4">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-                    <span className="ml-2">Previewing...</span>
-                  </div>
-                )}
-
-                {uploadResult && (
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                    <div className="flex items-center gap-2 text-green-800">
-                      <CheckCircle className="h-5 w-5" />
-                      <span className="font-medium">Data Preview Generated</span>
+                  <div className="space-y-4">
+                    <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center">
+                      <FileSpreadsheet className="h-12 w-12 mx-auto text-gray-400 mb-2" />
+                      <Label htmlFor="file-upload" className="cursor-pointer">
+                        <span className="text-primary hover:underline">Click to upload</span>
+                        <span className="text-muted-foreground"> or drag and drop</span>
+                      </Label>
+                      <Input
+                        id="file-upload"
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".xlsx,.xls,.csv"
+                        className="hidden"
+                        onChange={handleFileUpload}
+                        disabled={uploading || previewLoading}
+                      />
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Excel (.xlsx, .xls) or CSV files only
+                      </p>
                     </div>
-                    <p className="text-sm text-green-700 mt-1">
-                      {uploadResult.message}
-                    </p>
-                    <div className="text-xs text-green-600 mt-2 space-y-1">
-                      <p>Total Records: {uploadResult.totalRecords}</p>
-                      <p>Unique Employees: {uploadResult.uniqueEmployees}</p>
+
+                    <div className="flex gap-2">
+
+                      <Input
+                        id="preview-upload"
+                        type="file"
+                        accept=".xlsx,.xls,.csv"
+                        className="hidden"
+                        onChange={handlePreview}
+                        disabled={uploading || previewLoading}
+                      />
                     </div>
-                    {uploadResult.notFoundEmployeeIds && uploadResult.notFoundEmployeeIds.length > 0 && (
-                      <div className="mt-2 text-xs text-red-600">
-                        <p className="font-medium">Employee IDs not found in system:</p>
-                        <p className="mt-1">{uploadResult.notFoundEmployeeIds.join(", ")}</p>
+
+                    {uploading && (
+                      <div className="flex items-center justify-center py-4">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                       </div>
                     )}
+
+                    {previewLoading && (
+                      <div className="flex items-center justify-center py-4">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                        <span className="ml-2">Previewing...</span>
+                      </div>
+                    )}
+
+                    {uploadResult && (
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <div className="flex items-center gap-2 text-green-800">
+                          <CheckCircle className="h-5 w-5" />
+                          <span className="font-medium">Data Preview Generated</span>
+                        </div>
+                        <p className="text-sm text-green-700 mt-1">
+                          {uploadResult.message}
+                        </p>
+                        <div className="text-xs text-green-600 mt-2 space-y-1">
+                          <p>Total Records: {uploadResult.totalRecords}</p>
+                          <p>Unique Employees: {uploadResult.uniqueEmployees}</p>
+                        </div>
+                        {uploadResult.notFoundEmployeeIds && uploadResult.notFoundEmployeeIds.length > 0 && (
+                          <div className="mt-2 text-xs text-red-600">
+                            <p className="font-medium">Employee IDs not found in system:</p>
+                            <p className="mt-1">{uploadResult.notFoundEmployeeIds.join(", ")}</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {uploadError && (
+                      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                        <div className="flex items-center gap-2 text-red-800">
+                          <AlertCircle className="h-5 w-5" />
+                          <span className="font-medium">Upload Failed</span>
+                        </div>
+                        <p className="text-sm text-red-700 mt-1">
+                          {uploadError}
+                        </p>
+                      </div>
+                    )}
+
                   </div>
-                )}
-
-                {uploadError && (
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                    <div className="flex items-center gap-2 text-red-800">
-                      <AlertCircle className="h-5 w-5" />
-                      <span className="font-medium">Upload Failed</span>
-                    </div>
-                    <p className="text-sm text-red-700 mt-1">
-                      {uploadError}
-                    </p>
-                  </div>
-                )}
-
-              </div>
-            </DialogContent>
-          </Dialog>
-        </div>
-      </div>
-
-      {/* Stats Cards */}
-      <div>
-        {selectedEmployeeId && (
-          <div className="mb-4 flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg p-3">
-            <span className="text-sm font-medium text-blue-900">
-              Showing stats for <span className="font-semibold">{pivotAttendanceData(attendance).find(e => e.user_id === selectedEmployeeId)?.employee_name || "selected employee"}</span>
-            </span>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleClearSelection}
-            >
-              Clear Selection
-            </Button>
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
-        )}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Total Working Days
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.total}</div>
-            </CardContent>
-          </Card>
 
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Present
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">{stats.present}</div>
-            </CardContent>
-          </Card>
+          {/* Stats Cards */}
+          <div>
+            {selectedEmployeeId && (
+              <div className="mb-4 flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <span className="text-sm font-medium text-blue-900">
+                  Showing stats for <span className="font-semibold">{pivotAttendanceData(attendance).find(e => e.user_id === selectedEmployeeId)?.employee_name || "selected employee"}</span>
+                </span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleClearSelection}
+                >
+                  Clear Selection
+                </Button>
+              </div>
+            )}
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Total Working Days
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats.total}</div>
+                </CardContent>
+              </Card>
 
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Absent
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-red-600">{stats.absent}</div>
-            </CardContent>
-          </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Present
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-green-600">{stats.present}</div>
+                </CardContent>
+              </Card>
 
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Late
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-yellow-600">{stats.late}</div>
-            </CardContent>
-          </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Absent
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-red-600">{stats.absent}</div>
+                </CardContent>
+              </Card>
 
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Half Day
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-orange-600">{stats.halfDay}</div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Late
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-yellow-600">{stats.late}</div>
+                </CardContent>
+              </Card>
 
-      {/* Attendance Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5" />
-            Attendance Records For the Month of {attendance.length > 0 && (() => {
-              const firstDate = new Date(attendance[0].date)
-              return firstDate.toLocaleDateString("en-US", { month: "long", year: "numeric" })
-            })()}
-          </CardTitle>
-          <CardDescription>
-            Showing attendance records consolidated by employee
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {attendance.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              No attendance records found for the selected filters
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Half Day
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold text-orange-600">{stats.halfDay}</div>
+                </CardContent>
+              </Card>
             </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b">
-                    <th className="px-4 py-3 text-left font-semibold text-muted-foreground left-0 z-10">Emp Name</th>
-                    <th className="px-4 py-3 text-left font-semibold text-muted-foreground left-40 z-10">Dep</th>
-                    {(() => {
-                      const pivoted = pivotAttendanceData(attendance)
-                      const maxDays = Math.max(...pivoted.map(emp => emp.attendanceDays.length), 0)
-                      return Array.from({ length: maxDays }, (_, i) => {
-                        // Get the first employee's day data to extract date info
-                        const firstEmployeeDay = pivoted[0]?.attendanceDays[i]
-                        const dayDate = firstEmployeeDay?.date || ""
-                        const dayName = firstEmployeeDay?.dayName || ""
-                        const isSunday = dayName === "Sun"
+          </div>
 
-                        return (
-                          <th
-                            key={i}
-                            className={`px-4 py-3 text-center font-semibold text-xs border-l min-w-32 ${isSunday ? "bg-blue-100" : ""}`}
-                          >
+          {/* Attendance Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="h-5 w-5" />
+                Attendance Records For the Month of {attendance.length > 0 && (() => {
+                  const firstDate = new Date(attendance[0].date)
+                  return firstDate.toLocaleDateString("en-US", { month: "long", year: "numeric" })
+                })()}
+              </CardTitle>
+              <CardDescription>
+                Showing attendance records consolidated by employee
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {attendance.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No attendance records found for the selected filters
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="px-4 py-3 text-left font-semibold text-muted-foreground left-0 z-10">Emp Name</th>
+                        <th className="px-4 py-3 text-left font-semibold text-muted-foreground left-40 z-10">Dep</th>
+                        {(() => {
+                          const pivoted = pivotAttendanceData(attendance)
+                          const maxDays = Math.max(...pivoted.map(emp => emp.attendanceDays.length), 0)
+                          return Array.from({ length: maxDays }, (_, i) => {
+                            // Get the first employee's day data to extract date info
+                            const firstEmployeeDay = pivoted[0]?.attendanceDays[i]
+                            const dayDate = firstEmployeeDay?.date || ""
+                            const dayName = firstEmployeeDay?.dayName || ""
+                            const isSunday = dayName === "Sun"
 
-                            <div className={`text-xs ${isSunday ? "font-semibold text-blue-700" : "text-muted-foreground"}`}>
-                              {dayDate} {isSunday ? `(${dayName})` : `(${dayName})`}
-                            </div>
-                          </th>
-                        )
-                      })
-                    })()}
-                  </tr>
-                </thead>
-                <tbody>
-                  {pivotAttendanceData(attendance).map((empData) => (
-                    <tr key={empData.user_id} className="border-b hover:bg-muted/50">
-                      <td
-                        className="px-4 py-3 font-medium left-0 z-10 cursor-pointer hover:text-blue-600 hover:underline"
-                        onClick={() => handleEmployeeClick(empData.user_id)}
-                      >
-                        {empData.employee_name}
-                      </td>
-                      <td className="px-4 py-3 text-muted-foreground left-40 z-10">
-                        {empData.department || "-"}
-                      </td>
-                      {empData.attendanceDays.map((day, idx) => {
-                        const isEmpty = day.status === "EMPTY"
-                        return (
-                          <td
-                            key={idx}
-                            className={`px-4 py-3 text-center text-xs border-l min-w-32 ${isEmpty ? "" : ""}`}
-                          >
-                            <div className="space-y-1">
-                              {isEmpty ? (
-                                <div className="text-xs text-muted font-medium">
-                                  No Data
+                            return (
+                              <th
+                                key={i}
+                                className={`px-4 py-3 text-center font-semibold text-xs border-l min-w-32 ${isSunday ? "bg-blue-100" : ""}`}
+                              >
+
+                                <div className={`text-xs ${isSunday ? "font-semibold text-blue-700" : "text-muted-foreground"}`}>
+                                  {dayDate} {isSunday ? `(${dayName})` : `(${dayName})`}
                                 </div>
-                              ) : (
-                                <>
-                                  {day.check_in && (
-                                    <div className="text-xs text-muted-foreground mt-1">
-                                      {day.check_in} - {day.check_out || "—"}
-                                    </div>
-                                  )}
-                                  {canEdit && !isEmpty && (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-6 w-6 p-0 mt-1"
-                                      onClick={() => handleEditClick(day, empData.user_id, empData.employee_name)}
-                                    >
-                                      <Pencil className="h-3 w-3" />
-                                    </Button>
-                                  )}
-                                </>
-                              )}
-                            </div>
+                              </th>
+                            )
+                          })
+                        })()}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pivotAttendanceData(attendance).map((empData) => (
+                        <tr key={empData.user_id} className="border-b hover:bg-muted/50">
+                          <td
+                            className="px-4 py-3 font-medium left-0 z-10 cursor-pointer hover:text-blue-600 hover:underline"
+                            onClick={() => handleEmployeeClick(empData.user_id)}
+                          >
+                            {empData.employee_name}
                           </td>
-                        )
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                          <td className="px-4 py-3 text-muted-foreground left-40 z-10">
+                            {empData.department || "-"}
+                          </td>
+                          {empData.attendanceDays.map((day, idx) => {
+                            const isEmpty = day.status === "EMPTY"
+                            return (
+                              <td
+                                key={idx}
+                                className={`px-4 py-3 text-center text-xs border-l min-w-32 ${isEmpty ? "" : ""}`}
+                              >
+                                <div className="space-y-1">
+                                  {isEmpty ? (
+                                    <div className="text-xs text-muted font-medium">
+                                      No Data
+                                    </div>
+                                  ) : (
+                                    <>
+                                      {day.check_in && (
+                                        <div className="text-xs text-muted-foreground mt-1">
+                                          {day.check_in} - {day.check_out || "—"}
+                                        </div>
+                                      )}
+                                      {canEdit && !isEmpty && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="h-6 w-6 p-0 mt-1"
+                                          onClick={() => handleEditClick(day, empData.user_id, empData.employee_name)}
+                                        >
+                                          <Pencil className="h-3 w-3" />
+                                        </Button>
+                                      )}
+                                    </>
+                                  )}
+                                </div>
+                              </td>
+                            )
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </>
+      )}
 
       {/* Edit Dialog */}
       <EditDialog />

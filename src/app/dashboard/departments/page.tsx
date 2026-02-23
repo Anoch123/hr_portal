@@ -347,7 +347,7 @@ export default function DepartmentsPage() {
 
       {/* Add Department Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="w-[95vw] max-w-md">
+        <DialogContent className="w-[95vw] max-w-3xl">
           <DialogHeader>
             <DialogTitle>Add Department</DialogTitle>
             <DialogDescription>
@@ -398,7 +398,7 @@ export default function DepartmentsPage() {
 
       {/* Edit Department Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="w-[95vw] max-w-md">
+        <DialogContent className="w-[95vw] max-w-3xl">
           <DialogHeader>
             <DialogTitle>Edit Department</DialogTitle>
             <DialogDescription>

@@ -565,7 +565,7 @@ export default function LeavesPage() {
               Request Leave
             </Button>
           </DialogTrigger>
-          <DialogContent className="w-[95vw] max-w-md">
+          <DialogContent className="w-[95vw] max-w-3xl">
             <DialogHeader>
               <DialogTitle>Request Leave {isOnProbation}</DialogTitle>
               <DialogDescription>
@@ -601,11 +601,6 @@ export default function LeavesPage() {
                       ))}
                   </SelectContent>
                 </Select>
-                {availableLeaveTypeIds.size === 0 && balanceLeaveTypeIds.size > 0 && (
-                  <p className="text-sm text-amber-600">
-                    No leave balance available. Your leave request will be submitted as unpaid leave.
-                  </p>
-                )}
               </div>
               {/* No Pay Info - shown when balance is insufficient or all balances are zero */}
               {(availableLeaveTypeIds.size === 0) && balanceLeaveTypeIds.size > 0 && (
@@ -619,36 +614,17 @@ export default function LeavesPage() {
                 <Label>Leave Mode *</Label>
                 {isOnProbation ? (
                   <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-                    {hasCarriedOverLeave ? (
-                      <>
-                        <p className="text-sm text-yellow-800">
-                          You are on probation but have unused leaves from previous months. Full day leave is allowed.
-                        </p>
-                        <Select value={leaveMode} onValueChange={(value: 'FULL' | 'HALF' | 'SHORT') => setLeaveMode(value)}>
-                          <SelectTrigger className="mt-2">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="FULL">Full Day</SelectItem>
-                            <SelectItem value="HALF">Half Day</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </>
-                    ) : (
-                      <>
-                        <p className="text-sm text-yellow-800">
-                          You are currently on probation with no unused leaves from previous months. Only half-day leave is allowed.
-                        </p>
-                        <Select value={leaveMode} onValueChange={(value: 'FULL' | 'HALF' | 'SHORT') => setLeaveMode(value)}>
-                          <SelectTrigger className="mt-2">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="HALF">Half Day</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </>
-                    )}
+                    <p className="text-sm text-yellow-800">
+                      You are currently on probation. Only half-day leave is allowed.
+                    </p>
+                    <Select value={leaveMode} onValueChange={(value: 'FULL' | 'HALF' | 'SHORT') => setLeaveMode(value)}>
+                      <SelectTrigger className="mt-2">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="HALF">Half Day</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 ) : (
                   <Select value={leaveMode} onValueChange={(value: 'FULL' | 'HALF' | 'SHORT') => setLeaveMode(value)}>
@@ -839,7 +815,7 @@ export default function LeavesPage() {
 
       {/* Cancel Dialog */}
       <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
-        <DialogContent className="w-[95vw] max-w-md">
+        <DialogContent className="w-[95vw] max-w-3xl">
           <DialogHeader>
             <DialogTitle>Cancel Leave Request</DialogTitle>
             <DialogDescription>
@@ -907,7 +883,7 @@ export default function LeavesPage() {
 
       {/* Leave Request Details Dialog */}
       <Dialog open={detailsDialogOpen} onOpenChange={setDetailsDialogOpen}>
-        <DialogContent className="w-[95vw] max-w-md">
+        <DialogContent className="w-[95vw] max-w-3xl">
           <DialogHeader>
             <DialogTitle>Leave Request Details</DialogTitle>
             <DialogDescription>

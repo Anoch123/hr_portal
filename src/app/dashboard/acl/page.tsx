@@ -407,7 +407,7 @@ export default function ACLPage() {
 
       {/* Add Permission Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="w-[95vw] max-w-md">
+        <DialogContent className="w-[95vw] max-w-3xl">
           <DialogHeader>
             <DialogTitle>Add Permission</DialogTitle>
             <DialogDescription>
@@ -481,7 +481,7 @@ export default function ACLPage() {
 
       {/* Assign Permission Dialog */}
       <Dialog open={assignDialogOpen} onOpenChange={setAssignDialogOpen}>
-        <DialogContent className="w-[95vw] max-w-md">
+        <DialogContent className="w-[95vw] max-w-3xl">
           <DialogHeader>
             <DialogTitle>Assign Permission</DialogTitle>
             <DialogDescription>

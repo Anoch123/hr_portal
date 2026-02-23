@@ -345,7 +345,7 @@ export default function LeaveTypesPage() {
               Add Leave Type
             </Button>
           </DialogTrigger>
-          <DialogContent className="w-[95vw] max-w-md">
+          <DialogContent className="w-[95vw] max-w-3xl">
             <DialogHeader>
               <DialogTitle>Add Leave Type</DialogTitle>
               <DialogDescription>
@@ -520,7 +520,7 @@ export default function LeaveTypesPage() {
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="w-[95vw] max-w-md">
+        <DialogContent className="w-[95vw] max-w-3xl">
           <DialogHeader>
             <DialogTitle>Edit Leave Type</DialogTitle>
             <DialogDescription>
