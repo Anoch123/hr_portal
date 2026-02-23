@@ -174,6 +174,56 @@ export const emailTemplates = {
     `,
   }),
 
+  leaveRequestCancelledForManager: (
+    employeeName: string,
+    leaveType: string,
+    startDate: string,
+    endDate: string,
+    managerName: string,
+    reason?: string
+  ) => ({
+    subject: `Leave Request Cancelled - ${employeeName}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #ffc107;">Leave Request Cancelled</h2>
+        <p>Dear ${managerName},</p>
+        <p><strong>${employeeName}</strong> has cancelled their leave request which was previously approved.</p>
+        <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+          <p><strong>Leave Type:</strong> ${leaveType}</p>
+          <p><strong>Start Date:</strong> ${startDate}</p>
+          <p><strong>End Date:</strong> ${endDate}</p>
+          ${reason ? `<p><strong>Cancellation Reason:</strong> ${reason}</p>` : ''}
+        </div>
+        <p>The leave balance has been restored.</p>
+      </div>
+    `,
+  }),
+
+  leaveRequestCancelledForAdmin: (
+    employeeName: string,
+    leaveType: string,
+    startDate: string,
+    endDate: string,
+    cancelledBy: string,
+    reason?: string
+  ) => ({
+    subject: `Leave Request Cancelled - ${employeeName}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #ffc107;">Leave Request Cancelled</h2>
+        <p>Dear Admin,</p>
+        <p><strong>${employeeName}</strong>'s leave request has been <strong style="color: #ffc107;">cancelled</strong> by ${cancelledBy}.</p>
+        <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
+          <p><strong>Leave Type:</strong> ${leaveType}</p>
+          <p><strong>Start Date:</strong> ${startDate}</p>
+          <p><strong>End Date:</strong> ${endDate}</p>
+          ${reason ? `<p><strong>Cancellation Reason:</strong> ${reason}</p>` : ''}
+        </div>
+        <p>The leave balance has been restored.</p>
+      </div>
+    `,
+  }),
+
   welcomeEmployee: (employeeName: string, email: string, tempPassword: string) => ({
     subject: `Welcome to the Leave Management System`,
     html: `

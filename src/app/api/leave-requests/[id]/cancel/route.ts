@@ -151,7 +151,7 @@ export async function POST(
       details: reason ? `Leave request cancelled. Reason: ${reason}` : "Leave request cancelled",
     })
 
-    // Send email to manager if request was approved
+    // Send email to manager if request was approved and manager is not the one cancelling
     if (previousStatus === "APPROVED" && leaveRequest.user.manager_id) {
       // Fetch manager details
       const { data: manager } = await supabaseAdmin
@@ -160,8 +160,9 @@ export async function POST(
         .eq("id", leaveRequest.user.manager_id)
         .single()
 
-      if (manager) {
-        const emailContent = emailTemplates.leaveRequestCancelled(
+      // Only send to manager if they are NOT the one cancelling
+      if (manager && manager.id !== userId) {
+        const emailContent = emailTemplates.leaveRequestCancelledForManager(
           `${leaveRequest.user.first_name} ${leaveRequest.user.last_name}`,
           leaveRequest.leaveType.name,
           formatDate(leaveRequest.start_date),
@@ -174,6 +175,48 @@ export async function POST(
           subject: emailContent.subject,
           html: emailContent.html,
         })
+      }
+    }
+
+    // Send email to admin/HR when cancelling an approved request
+    if (previousStatus === "APPROVED") {
+      // Fetch all admins and HR managers
+      const { data: admins } = await supabaseAdmin
+        .from("users")
+        .select("id, first_name, last_name, email")
+        .in("role", ["ADMIN", "HR_MANAGER"])
+
+      // Get the name of the person cancelling
+      const { data: cancellingUser } = await supabaseAdmin
+        .from("users")
+        .select("first_name, last_name")
+        .eq("id", userId)
+        .single()
+
+      const cancelledByName = cancellingUser 
+        ? `${cancellingUser.first_name} ${cancellingUser.last_name}` 
+        : "Admin/HR"
+
+      // Send to each admin/HR except the one cancelling
+      if (admins && admins.length > 0) {
+        for (const admin of admins) {
+          // Skip if admin is the one cancelling
+          if (admin.id === userId) continue
+
+          const emailContent = emailTemplates.leaveRequestCancelledForAdmin(
+            `${leaveRequest.user.first_name} ${leaveRequest.user.last_name}`,
+            leaveRequest.leaveType.name,
+            formatDate(leaveRequest.start_date),
+            formatDate(leaveRequest.end_date),
+            cancelledByName,
+            reason
+          )
+          await sendEmail({
+            to: admin.email,
+            subject: emailContent.subject,
+            html: emailContent.html,
+          })
+        }
       }
     }
 
