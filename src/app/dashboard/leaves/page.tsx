@@ -673,8 +673,8 @@ export default function LeavesPage() {
               
               {/* Short Leave Time Selection */}
               {leaveMode === 'SHORT' && (
-                <div className="space-y-4 border rounded-md bg-slate-50">
-                  <div className="p-4 text-sm font-medium text-slate-700">Short Leave Time Range * (Max 2 hours)</div>
+                <div className="space-y-4 p-4 border rounded-md bg-slate-50">
+                  <div className="text-sm font-medium text-slate-700">Short Leave Time Range * (Max 2 hours)</div>
                   <div className="grid sm:grid-cols-2 grid-cols-1 gap-4">
                     <div className="space-y-2">
                       <Label>Start Time</Label>
@@ -682,7 +682,7 @@ export default function LeavesPage() {
                         type="time"
                         value={startTime}
                         onChange={(e) => setStartTime(e.target.value)}
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="flex h-10 sm:w-full w-[95%] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                       />
                     </div>
                     <div className="space-y-2">
@@ -691,11 +691,11 @@ export default function LeavesPage() {
                         type="time"
                         value={endTime}
                         onChange={(e) => setEndTime(e.target.value)}
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="flex h-10 sm:w-full w-[95%] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                       />
                     </div>
                   </div>
-                  <p className="text-xs text-muted-foreground p-4">
+                  <p className="text-xs text-muted-foreground">
                     Short leave is limited to a maximum of 2 hours. Please select a time range within working hours (8:30 AM - 5:00 PM).
                   </p>
                 </div>
