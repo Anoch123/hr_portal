@@ -673,10 +673,10 @@ export default function LeavesPage() {
               
               {/* Short Leave Time Selection */}
               {leaveMode === 'SHORT' && (
-                <div className="space-y-4 p-4 border rounded-md bg-slate-50">
-                  <div className="text-sm font-medium text-slate-700">Short Leave Time Range * (Max 2 hours)</div>
+                <div className="space-y-4 border rounded-md bg-slate-50">
+                  <div className="p-4 text-sm font-medium text-slate-700">Short Leave Time Range * (Max 2 hours)</div>
                   <div className="grid sm:grid-cols-2 grid-cols-1 gap-4">
-                    <div className="">
+                    <div className="space-y-2">
                       <Label>Start Time</Label>
                       <input
                         type="time"
@@ -685,7 +685,7 @@ export default function LeavesPage() {
                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                       />
                     </div>
-                    <div className="">
+                    <div className="space-y-2">
                       <Label>End Time</Label>
                       <input
                         type="time"
@@ -695,7 +695,7 @@ export default function LeavesPage() {
                       />
                     </div>
                   </div>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-foreground p-4">
                     Short leave is limited to a maximum of 2 hours. Please select a time range within working hours (8:30 AM - 5:00 PM).
                   </p>
                 </div>
