@@ -572,7 +572,7 @@ export default function LeavesPage() {
                 Submit a new leave request for approval
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4 py-4">
+            <div className="space-y-4 py-4 px-4">
               {error && (
                 <div className="bg-red-50 text-red-500 p-3 rounded-md text-sm">
                   {error}
