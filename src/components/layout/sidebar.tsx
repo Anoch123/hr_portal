@@ -102,7 +102,9 @@ export function Sidebar() {
     <>
       <div className="flex items-center gap-2 px-4 py-6 border-b">
         <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-          <span className="text-white font-bold text-sm">LMS</span>
+          <span className="text-white font-bold text-sm">
+            <img src="/company_logo.jpg" alt="Logo" className="h-8 w-8 rounded" />
+          </span>
         </div>
         <span className="font-semibold text-lg">SLM Leave Portal</span>
       </div>
@@ -180,7 +182,9 @@ export function Sidebar() {
         </Button>
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 bg-primary rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-xs">LMS</span>
+            <span className="text-white font-bold text-xs">
+              <img src="/company_logo.jpg" alt="Logo" className="h-8 w-10 rounded" />
+            </span>
           </div>
           <span className="font-semibold text-base">SLM Leave Portal</span>
         </div>

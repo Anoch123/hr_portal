@@ -5,7 +5,7 @@ import { supabaseAdmin } from "@/lib/supabase-admin"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { formatDate, getStatusColor } from "@/lib/utils"
-import { Calendar, Clock, CheckCircle, XCircle, AlertCircle } from "lucide-react"
+import { Calendar, Clock, CheckCircle, XCircle, AlertCircle, Ban } from "lucide-react"
 import { redirect } from "next/navigation"
 
 async function getDashboardData(userId: string, role: string) {
@@ -78,7 +78,7 @@ async function getDashboardData(userId: string, role: string) {
   }
 
   // Get stats
-  let totalLeaves = 0, approvedLeaves = 0, pendingLeaves = 0, rejectedLeaves = 0
+  let totalLeaves = 0, approvedLeaves = 0, pendingLeaves = 0, rejectedLeaves = 0, cancelledLeaves = 0
   if (canReadRequests) {
     const { count: total } = await supabaseAdmin
       .from("leave_requests")
@@ -106,6 +106,13 @@ async function getDashboardData(userId: string, role: string) {
       .eq("user_id", userId)
       .eq("status", "REJECTED")
     rejectedLeaves = rejected || 0
+
+    const { count: cancelled } = await supabaseAdmin
+      .from("leave_requests")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("status", "CANCELLED")
+    cancelledLeaves = cancelled || 0
   }
 
   const stats = {
@@ -113,6 +120,7 @@ async function getDashboardData(userId: string, role: string) {
     approvedLeaves: approvedLeaves || 0,
     pendingLeaves: pendingLeaves || 0,
     rejectedLeaves: rejectedLeaves || 0,
+    cancelledLeaves: cancelledLeaves || 0,
   }
 
   return {
@@ -153,6 +161,7 @@ export default async function DashboardPage() {
     approvedLeaves: 0,
     pendingLeaves: 0,
     rejectedLeaves: 0,
+    cancelledLeaves: 0,
   }
 
   try {
@@ -178,7 +187,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Requests</CardTitle>
@@ -220,6 +229,17 @@ export default async function DashboardPage() {
           <CardContent>
             <div className="text-2xl font-bold">{stats.rejectedLeaves}</div>
             <p className="text-xs text-muted-foreground">Leaves rejected</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Cancelled</CardTitle>
+            <Ban className="h-4 w-4 text-gray-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.cancelledLeaves}</div>
+            <p className="text-xs text-muted-foreground">Leaves cancelled</p>
           </CardContent>
         </Card>
       </div>
