@@ -565,7 +565,7 @@ export default function LeavesPage() {
               Request Leave
             </Button>
           </DialogTrigger>
-          <DialogContent className="w-[95vw] max-w-3xl">
+          <DialogContent className="w-[95vw] max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Request Leave {isOnProbation}</DialogTitle>
               <DialogDescription>

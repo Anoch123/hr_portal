@@ -161,8 +161,8 @@ export const emailTemplates = {
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #ffc107;">Leave Request Cancelled</h2>
-        <p>Dear ${managerName},</p>
-        <p><strong>${employeeName}</strong> has cancelled their approved leave request.</p>
+        <p>Dear ${employeeName},</p>
+        <p>Your leave request has been <strong style="color: #ffc107;">cancelled</strong>.
         <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
           <p><strong>Leave Type:</strong> ${leaveType}</p>
           <p><strong>Start Date:</strong> ${startDate}</p>
