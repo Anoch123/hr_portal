@@ -181,10 +181,16 @@ export async function POST(
     // Send email to admin/HR when cancelling an approved request
     if (previousStatus === "APPROVED") {
       // Fetch all admins and HR managers
-      const { data: admins } = await supabaseAdmin
+      const { data: admins, error: adminsError } = await supabaseAdmin
         .from("users")
         .select("id, first_name, last_name, email")
         .in("role", ["ADMIN", "HR_MANAGER"])
+
+      if (adminsError) {
+        console.error("Error fetching admins:", adminsError)
+      }
+
+      console.log("Found admins:", admins)
 
       // Get the name of the person cancelling
       const { data: cancellingUser } = await supabaseAdmin
@@ -197,12 +203,9 @@ export async function POST(
         ? `${cancellingUser.first_name} ${cancellingUser.last_name}` 
         : "Admin/HR"
 
-      // Send to each admin/HR except the one cancelling
+      // Send to each admin/HR
       if (admins && admins.length > 0) {
         for (const admin of admins) {
-          // Skip if admin is the one cancelling
-          if (admin.id === userId) continue
-
           const emailContent = emailTemplates.leaveRequestCancelledForAdmin(
             `${leaveRequest.user.first_name} ${leaveRequest.user.last_name}`,
             leaveRequest.leaveType.name,
@@ -217,6 +220,8 @@ export async function POST(
             html: emailContent.html,
           })
         }
+      } else {
+        console.log("No admins found with ADMIN or HR_MANAGER role")
       }
     }
 
