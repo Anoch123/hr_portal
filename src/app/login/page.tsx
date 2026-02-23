@@ -125,7 +125,7 @@ export default function LoginPage() {
               <img 
                 src="/company_logo.jpg" 
                 alt="Company Logo" 
-                className="h-30 w-30 mx-auto mb-6 rounded bg-white/10 p-2"
+                className="h-[80%] w-[80%] mx-auto mb-6 rounded bg-white/10 p-2"
               />
             </div>
           </div>
