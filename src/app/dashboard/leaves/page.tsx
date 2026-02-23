@@ -675,7 +675,7 @@ export default function LeavesPage() {
               {leaveMode === 'SHORT' && (
                 <div className="space-y-4 p-4 border rounded-md bg-slate-50">
                   <div className="text-sm font-medium text-slate-700">Short Leave Time Range * (Max 2 hours)</div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid sm:grid-cols-2 grid-cols-1 gap-4">
                     <div className="space-y-2">
                       <Label>Start Time</Label>
                       <input
