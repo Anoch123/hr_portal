@@ -771,7 +771,9 @@ export default function LeavesPage() {
         <TabsContent value="pending">
           <Card>
             <CardContent className="p-4">
-              {renderMobileCards(getFilteredRequests())}
+              <div className="space-y-4 md:hidden">
+                {renderMobileCards(getFilteredRequests())}
+              </div>
               <div className="hidden md:block">
                 {renderTable(getFilteredRequests())}
               </div>
@@ -782,7 +784,9 @@ export default function LeavesPage() {
         <TabsContent value="approved">
           <Card>
             <CardContent className="p-4">
-              {renderMobileCards(getFilteredRequests())}
+              <div className="space-y-4 md:hidden">
+                {renderMobileCards(getFilteredRequests())}
+              </div>
               <div className="hidden md:block">
                 {renderTable(getFilteredRequests())}
               </div>
@@ -793,7 +797,9 @@ export default function LeavesPage() {
         <TabsContent value="rejected">
           <Card>
             <CardContent className="p-4">
-              {renderMobileCards(getFilteredRequests())}
+              <div className="space-y-4 md:hidden">
+                {renderMobileCards(getFilteredRequests())}
+              </div>
               <div className="hidden md:block">
                 {renderTable(getFilteredRequests())}
               </div>
@@ -804,7 +810,9 @@ export default function LeavesPage() {
         <TabsContent value="cancelled">
           <Card>
             <CardContent className="p-4">
-              {renderMobileCards(getFilteredRequests())}
+              <div className="space-y-4 md:hidden">
+                {renderMobileCards(getFilteredRequests())}
+              </div>
               <div className="hidden md:block">
                 {renderTable(getFilteredRequests())}
               </div>
