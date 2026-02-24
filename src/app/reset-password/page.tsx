@@ -23,7 +23,7 @@ export default function ResetPasswordPage() {
   useEffect(() => {
     // Check if we have the token in the URL
     // Supabase sends the token in hash fragment (#access_token=xxx)
-    // and also in query parameters (?token=xxx&type=recovery) for backwards compatibility
+    // and also in query parameters (?token=xxx&type=recovery OR ?access_token=xxx)
     const checkToken = () => {
       // First check hash (has actual access_token in newer Supabase)
       const hashParams = new URLSearchParams(window.location.hash.substring(1))
@@ -32,11 +32,12 @@ export default function ResetPasswordPage() {
       // Also check query parameters
       const searchParams = new URLSearchParams(window.location.search)
       const tokenFromQuery = searchParams.get("token")
+      const accessTokenFromQuery = searchParams.get("access_token")
       const typeFromQuery = searchParams.get("type")
       
       if (tokenFromHash) {
         setIsValidToken(true)
-      } else if (tokenFromQuery && typeFromQuery === "recovery") {
+      } else if ((tokenFromQuery || accessTokenFromQuery) && typeFromQuery === "recovery") {
         setIsValidToken(true)
       } else {
         // Give it a bit more time in case of client-side navigation
@@ -46,9 +47,10 @@ export default function ResetPasswordPage() {
           
           const recheckSearchParams = new URLSearchParams(window.location.search)
           const recheckToken = recheckSearchParams.get("token")
+          const recheckAccessToken = recheckSearchParams.get("access_token")
           const recheckType = recheckSearchParams.get("type")
           
-          if (recheckHashToken || (recheckToken && recheckType === "recovery")) {
+          if (recheckHashToken || ((recheckToken || recheckAccessToken) && recheckType === "recovery")) {
             setIsValidToken(true)
           } else {
             setIsValidToken(false)
@@ -81,8 +83,9 @@ export default function ResetPasswordPage() {
     try {
       // Get the token from URL - check hash first (has actual access_token)
       // then fall back to query params
-      // Supabase sends token in hash (#access_token=xxx) AND query params (?token=xxx&type=recovery)
-      // The hash has the actual access token, query params have a one-time recovery token
+      // Supabase sends token in hash (#access_token=xxx) AND query params 
+      // (?token=xxx&type=recovery OR ?access_token=xxx)
+      // The hash has the actual access token, query params may have either token or access_token
       
       // First try hash (this has the actual access_token in newer Supabase)
       const hashParams = new URLSearchParams(window.location.hash.substring(1))
@@ -92,7 +95,8 @@ export default function ResetPasswordPage() {
       // If not in hash, try query parameters (for older Supabase or different configurations)
       if (!accessToken) {
         const queryParams = new URLSearchParams(window.location.search)
-        accessToken = queryParams.get("token")
+        // Check for both 'token' and 'access_token' in query params
+        accessToken = queryParams.get("access_token") || queryParams.get("token")
         // Query params typically don't have refresh_token
       }
 
