@@ -21,17 +21,34 @@ export default function ResetPasswordPage() {
   const [isValidToken, setIsValidToken] = useState<boolean | null>(null)
 
   useEffect(() => {
-    // Check if we have the token in the URL hash
-    // Use a small delay to ensure the hash is properly loaded
-    const checkHash = () => {
-      const hash = window.location.hash
-      if (hash && (hash.includes("access_token") || hash.includes("token="))) {
+    // Check if we have the token in the URL
+    // Supabase sends the token in hash fragment (#access_token=xxx)
+    // and also in query parameters (?token=xxx&type=recovery) for backwards compatibility
+    const checkToken = () => {
+      // First check hash (has actual access_token in newer Supabase)
+      const hashParams = new URLSearchParams(window.location.hash.substring(1))
+      const tokenFromHash = hashParams.get("access_token")
+      
+      // Also check query parameters
+      const searchParams = new URLSearchParams(window.location.search)
+      const tokenFromQuery = searchParams.get("token")
+      const typeFromQuery = searchParams.get("type")
+      
+      if (tokenFromHash) {
+        setIsValidToken(true)
+      } else if (tokenFromQuery && typeFromQuery === "recovery") {
         setIsValidToken(true)
       } else {
         // Give it a bit more time in case of client-side navigation
         setTimeout(() => {
-          const recheckHash = window.location.hash
-          if (recheckHash && (recheckHash.includes("access_token") || recheckHash.includes("token="))) {
+          const recheckHashParams = new URLSearchParams(window.location.hash.substring(1))
+          const recheckHashToken = recheckHashParams.get("access_token")
+          
+          const recheckSearchParams = new URLSearchParams(window.location.search)
+          const recheckToken = recheckSearchParams.get("token")
+          const recheckType = recheckSearchParams.get("type")
+          
+          if (recheckHashToken || (recheckToken && recheckType === "recovery")) {
             setIsValidToken(true)
           } else {
             setIsValidToken(false)
@@ -41,7 +58,7 @@ export default function ResetPasswordPage() {
     }
     
     // Small delay to ensure DOM is ready
-    const timer = setTimeout(checkHash, 100)
+    const timer = setTimeout(checkToken, 100)
     return () => clearTimeout(timer)
   }, [])
 
@@ -62,17 +79,30 @@ export default function ResetPasswordPage() {
     setLoading(true)
 
     try {
-      // Get the token from the URL hash
+      // Get the token from URL - check hash first (has actual access_token)
+      // then fall back to query params
+      // Supabase sends token in hash (#access_token=xxx) AND query params (?token=xxx&type=recovery)
+      // The hash has the actual access token, query params have a one-time recovery token
+      
+      // First try hash (this has the actual access_token in newer Supabase)
       const hashParams = new URLSearchParams(window.location.hash.substring(1))
-      const accessToken = hashParams.get("access_token")
-      const refreshToken = hashParams.get("refresh_token")
+      let accessToken = hashParams.get("access_token")
+      let refreshToken = hashParams.get("refresh_token")
+      
+      // If not in hash, try query parameters (for older Supabase or different configurations)
+      if (!accessToken) {
+        const queryParams = new URLSearchParams(window.location.search)
+        accessToken = queryParams.get("token")
+        // Query params typically don't have refresh_token
+      }
 
       if (!accessToken) {
         setError("Invalid or expired reset link. Please request a new password reset.")
         return
       }
 
-      // Set the session with the access token
+      // Set the session with the access token from either query params or hash
+      // Supabase tokens from query params (?token=xxx) are access tokens
       const { error: sessionError } = await supabase.auth.setSession({
         access_token: accessToken,
         refresh_token: refreshToken || "",
