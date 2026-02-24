@@ -322,7 +322,7 @@ export default function PrivacyPolicyPage() {
                   <FileText className="h-5 w-5" />
                   {activePolicy.title}
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="mt-4">
                   Current Active Privacy Policy
                   {activePolicy.version && ` - Version ${activePolicy.version}`}
                 </CardDescription>
