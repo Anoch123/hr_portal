@@ -100,7 +100,8 @@ export default function LeavesPage() {
   const [endDate, setEndDate] = useState<Date | undefined>()
   const [leaveMode, setLeaveMode] = useState<'FULL' | 'HALF' | 'SHORT'>('FULL')
   const [halfDayOption, setHalfDayOption] = useState<'MORNING' | 'EVENING'>('MORNING')
-  const [reason, setReason] = useState<'Exam Leave'| 'Study Leave'| 'Religious Holiday'| 'Sick Leave'| 'Medical Appointment'| 'Hospitalization'| 'Funeral'| 'Personal Leave'>('Personal Leave')
+  const [reason, setReason] = useState<'Exam Leave'| 'Study Leave'| 'Religious Holiday'| 'Sick Leave'| 'Medical Appointment'| 'Hospitalization'| 'Funeral'| 'Personal Leave'| 'Other'>('Personal Leave')
+  const [otherReason, setOtherReason] = useState('')
   const [startTime, setStartTime] = useState('09:00')
   const [endTime, setEndTime] = useState('11:00')
   const [submitting, setSubmitting] = useState(false)
@@ -235,6 +236,12 @@ export default function LeavesPage() {
       return
     }
 
+    // Validate other reason is provided
+    if (reason === 'Other' && !otherReason.trim()) {
+      setError("Please specify your reason")
+      return
+    }
+
     // Validate time selection for short leave (max 2 hours)
     if (leaveMode === 'SHORT') {
       if (!startTime || !endTime) {
@@ -272,7 +279,7 @@ export default function LeavesPage() {
           endDate: formatLocalDate(endDate),
           leaveMode,
           halfDayOption: leaveMode === 'HALF' ? halfDayOption : undefined,
-          reason,
+          reason: reason === 'Other' ? otherReason : reason,
           startTime: leaveMode === 'SHORT' ? startTime : undefined,
           endTime: leaveMode === 'SHORT' ? endTime : undefined,
         }),
@@ -359,6 +366,7 @@ export default function LeavesPage() {
     setLeaveMode('FULL')
     setHalfDayOption('MORNING')
     setReason('Personal Leave')
+    setOtherReason('')
     setStartTime('09:00')
     setEndTime('11:00')
     setError("")
@@ -723,7 +731,7 @@ export default function LeavesPage() {
               </div>
               <div className="space-y-2">
                 <Label>Reason *</Label>
-                <Select value={reason} onValueChange={(value: 'Exam Leave'| 'Study Leave'| 'Religious Holiday'| 'Sick Leave'| 'Medical Appointment'| 'Hospitalization'| 'Funeral'| 'Personal Leave') => setReason(value)}>
+                <Select value={reason} onValueChange={(value: 'Exam Leave'| 'Study Leave'| 'Religious Holiday'| 'Sick Leave'| 'Medical Appointment'| 'Hospitalization'| 'Funeral'| 'Personal Leave'| 'Other') => setReason(value)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select leave mode" />
                   </SelectTrigger>
@@ -736,9 +744,21 @@ export default function LeavesPage() {
                     <SelectItem value="Medical Appointment">Medical Appointment</SelectItem>
                     <SelectItem value="Hospitalization">Hospitalization</SelectItem>
                     <SelectItem value="Funeral">Funeral</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+              {reason === 'Other' && (
+                <div className="space-y-2">
+                  <Label>Please specify your reason *</Label>
+                  <Textarea
+                    value={otherReason}
+                    onChange={(e) => setOtherReason(e.target.value)}
+                    placeholder="Enter the reason for your leave request"
+                    rows={3}
+                  />
+                </div>
+              )}
             </div>
             <DialogFooter className="flex-col sm:flex-row gap-2">
               <Button variant="outline" onClick={() => setDialogOpen(false)} className="w-full sm:w-auto">
