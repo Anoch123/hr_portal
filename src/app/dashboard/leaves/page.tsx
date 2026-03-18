@@ -94,7 +94,6 @@ export default function LeavesPage() {
   const [activeTab, setActiveTab] = useState("pending")
   const [userRole, setUserRole] = useState<string>("")
   const [manager, setManager] = useState<{ id: string; first_name: string; last_name: string; email: string } | null>(null)
-  const [hasShortLeaveThisMonth, setHasShortLeaveThisMonth] = useState(false)
 
   // Form state
   const [leaveTypeId, setLeaveTypeId] = useState("")
@@ -125,7 +124,6 @@ export default function LeavesPage() {
       await fetchRequests()
       await fetchLeaveTypes()
       await checkProbationStatus()
-      await checkShortLeaveAvailability()
     }
     init()
   }, [])
@@ -207,27 +205,6 @@ export default function LeavesPage() {
       }
     } catch (err) {
       console.error("Error checking probation status:", err)
-    }
-  }
-
-  const checkShortLeaveAvailability = async () => {
-    try {
-      const now = new Date()
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
-      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString()
-
-      // Fetch all leave requests for the current month
-      const res = await fetch(`/api/leave-requests?myRequests=true&startDate=${startOfMonth.split('T')[0]}&endDate=${endOfMonth.split('T')[0]}`)
-      const data = await res.json()
-      
-      // Check if any short leave was taken this month
-      const shortLeaveTaken = data.requests?.some((req: LeaveRequest) => 
-        req.leave_mode === 'SHORT' && req.status !== 'REJECTED' && req.status !== 'CANCELLED'
-      )
-      
-      setHasShortLeaveThisMonth(!!shortLeaveTaken)
-    } catch (err) {
-      console.error("Error checking short leave availability:", err)
     }
   }
 
@@ -688,21 +665,11 @@ export default function LeavesPage() {
                     <SelectContent>
                       <SelectItem value="FULL">Full Day</SelectItem>
                       <SelectItem value="HALF">Half Day</SelectItem>
-                      <SelectItem value="SHORT" disabled={hasShortLeaveThisMonth}>
-                        {hasShortLeaveThisMonth ? "Short Leave (Already used this month)" : "Short Leave"}
-                      </SelectItem>
+                      <SelectItem value="SHORT">Short Leave</SelectItem>
                     </SelectContent>
                   </Select>
                 )}
               </div>
-              {/* Short Leave Restriction Info */}
-              {hasShortLeaveThisMonth && (
-                <div className="p-3 bg-amber-50 border border-amber-200 rounded-md">
-                  <p className="text-sm text-amber-800">
-                    You have already used your short leave for this month. Short leave is limited to once per month.
-                  </p>
-                </div>
-              )}
               {/* Half Day Selection */}
               {leaveMode === 'HALF' && (
                 <div className="space-y-4 p-4 border rounded-md bg-slate-50">
