@@ -39,7 +39,7 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs"
 import { formatRole } from "@/lib/utils"
-import { Plus, Search, Edit, UserX, Calendar, UserMinus, Trash2 } from "lucide-react"
+import { Plus, Search, Edit, UserX, Calendar, UserMinus, Trash2, Key } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 
 interface LeaveBalance {
@@ -114,6 +114,7 @@ export default function EmployeesPage() {
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [balanceDialogOpen, setBalanceDialogOpen] = useState(false)
   const [resignDialogOpen, setResignDialogOpen] = useState(false)
+  const [resetPasswordDialogOpen, setResetPasswordDialogOpen] = useState(false)
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null)
   const [employeeBalances, setEmployeeBalances] = useState<LeaveBalance[]>([])
   const [editingBalance, setEditingBalance] = useState<LeaveBalance | null>(null)
@@ -145,9 +146,14 @@ export default function EmployeesPage() {
     resignationDate: "",
     terminationReason: "",
   })
+  const [resetPasswordFormData, setResetPasswordFormData] = useState({
+    newPassword: "",
+    confirmPassword: "",
+  })
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState("")
   const [activeTab, setActiveTab] = useState("employees")
+  const [isAdmin, setIsAdmin] = useState(false)
 
   // Individual search states for each tab
   const [employeesSearch, setEmployeesSearch] = useState("")
@@ -187,7 +193,16 @@ export default function EmployeesPage() {
     fetchEmployees()
     fetchLeaveTypes()
     fetchDepartments()
+    checkAdminStatus()
   }, [])
+
+  const checkAdminStatus = async () => {
+    if (session?.user) {
+      // Check if user is admin from session
+      const userRole = session.user.role as string
+      setIsAdmin(userRole === "ADMIN")
+    }
+  }
 
   const fetchEmployees = async () => {
     try {
@@ -396,6 +411,64 @@ export default function EmployeesPage() {
         description: "An error occurred. Please try again.",
         variant: "destructive",
       })
+    }
+  }
+
+  const handleResetPassword = (employee: Employee) => {
+    setSelectedEmployee(employee)
+    setResetPasswordFormData({ newPassword: "", confirmPassword: "" })
+    setResetPasswordDialogOpen(true)
+  }
+
+  const submitPasswordReset = async () => {
+    if (!selectedEmployee) return
+
+    if (resetPasswordFormData.newPassword.length < 6) {
+      setError("Password must be at least 6 characters")
+      return
+    }
+
+    if (resetPasswordFormData.newPassword !== resetPasswordFormData.confirmPassword) {
+      setError("Passwords do not match")
+      return
+    }
+
+    setSubmitting(true)
+    try {
+      const res = await fetch(`/api/employees/${selectedEmployee.id}/reset-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: resetPasswordFormData.newPassword }),
+      })
+
+      const data = await res.json()
+      if (!res.ok) {
+        setError(data.error || "Failed to reset password")
+        toast({
+          title: "Error",
+          description: data.error || "Failed to reset password",
+          variant: "destructive",
+        })
+        return
+      }
+
+      setResetPasswordDialogOpen(false)
+      setSelectedEmployee(null)
+      setError("")
+      toast({
+        title: "Success",
+        description: data.message || "Password has been reset successfully",
+        variant: "success",
+      })
+    } catch (err) {
+      setError("An error occurred. Please try again.")
+      toast({
+        title: "Error",
+        description: "An error occurred. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -728,6 +801,16 @@ export default function EmployeesPage() {
                   <Calendar className="h-4 w-4 mr-1" />
                   Balance
                 </Button>
+                {isAdmin && employee.role !== "ADMIN" && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-blue-600 hover:text-blue-700"
+                    onClick={() => handleResetPassword(employee)}
+                  >
+                    <Key className="h-4 w-4" />
+                  </Button>
+                )}
                 {employee.is_active && employee.role !== "ADMIN" && (
                   <>
                     <Button
@@ -833,6 +916,16 @@ export default function EmployeesPage() {
                     >
                       <Calendar className="h-4 w-4" />
                     </Button>
+                    {isAdmin && employee.role !== "ADMIN" && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-blue-600 hover:text-blue-700 h-8 w-8 p-0"
+                        onClick={() => handleResetPassword(employee)}
+                      >
+                        <Key className="h-4 w-4" />
+                      </Button>
+                    )}
                     {employee.is_active && employee.role !== "ADMIN" && (
                       <>
                         <Button
@@ -1643,6 +1736,55 @@ export default function EmployeesPage() {
             </Button>
             <Button onClick={handleResign} disabled={submitting} className="w-full sm:w-auto">
               {submitting ? "Processing..." : "Process Resignation"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reset Password Dialog */}
+      <Dialog open={resetPasswordDialogOpen} onOpenChange={setResetPasswordDialogOpen}>
+        <DialogContent className="max-w-md w-[95vw]">
+          <DialogHeader>
+            <DialogTitle>Reset Employee Password</DialogTitle>
+            <DialogDescription>
+              Set a new password for {selectedEmployee?.first_name} {selectedEmployee?.last_name} ({selectedEmployee?.email})
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {error && (
+              <div className="bg-red-50 text-red-500 p-3 rounded-md text-sm">
+                {error}
+              </div>
+            )}
+            <div className="space-y-2">
+              <Label>New Password *</Label>
+              <Input
+                type="password"
+                value={resetPasswordFormData.newPassword}
+                onChange={(e) =>
+                  setResetPasswordFormData({ ...resetPasswordFormData, newPassword: e.target.value })
+                }
+                placeholder="Enter new password (min 6 characters)"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Confirm Password *</Label>
+              <Input
+                type="password"
+                value={resetPasswordFormData.confirmPassword}
+                onChange={(e) =>
+                  setResetPasswordFormData({ ...resetPasswordFormData, confirmPassword: e.target.value })
+                }
+                placeholder="Confirm new password"
+              />
+            </div>
+          </div>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button variant="outline" onClick={() => setResetPasswordDialogOpen(false)} className="w-full sm:w-auto">
+              Cancel
+            </Button>
+            <Button onClick={submitPasswordReset} disabled={submitting} className="w-full sm:w-auto">
+              {submitting ? "Resetting..." : "Reset Password"}
             </Button>
           </DialogFooter>
         </DialogContent>
